@@ -1,3 +1,5 @@
+from BO.model import Model
+
 
 
 
@@ -43,6 +45,7 @@ Etapes de la fonctionnalité :
 """ ***************************************************************************************** """
 
 
+llm = Model()
 
 
 
@@ -63,8 +66,7 @@ from sentence_transformers import SentenceTransformer
 
 def vectorize_criteria(criteria_list):
     """ Méthode qui vectorise les critères de la spéc """
-    model = SentenceTransformer('model_name')  # Remplacer par le modèle approprié
-    vectors = model.encode(criteria_list)
+    vectors = llm.encode(criteria_list)
     return vectors
 
 
