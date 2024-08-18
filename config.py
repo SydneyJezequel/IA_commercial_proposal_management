@@ -1,6 +1,6 @@
 # Paramètres de la classe Model :
 MODEL_NAME = "paraphrase-MiniLM-L6-v2"
-IMAGE_PATH = "/Users/sjezequel/PycharmProjects/CommercialProposals/images/devis_2.png"
+IMAGE_PATH = "/Users/sjezequel/PycharmProjects/CommercialProposals/images/devis_3.png"
 
 
 
