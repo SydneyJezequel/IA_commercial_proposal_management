@@ -1,10 +1,11 @@
 # Paramètres de la classe Model :
-MODEL_NAME = "paraphrase-MiniLM-L6-v2"
+MODEL_NAME_FALCON7B = 'falcon-7b-instruct'
 IMAGE_PATH = "/Users/sjezequel/PycharmProjects/CommercialProposals/images/devis_3.png"
 
 
 # Accès à l'Api :
-TOKEN_QUOTATION_ANALYSIS = "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"
+# TOKEN_QUOTATION_ANALYSIS = "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"
+MONSTER_API_KEY = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6ImM2OWRiZjIyNjMyYzE0ZjA2YThiNjEwZmQ2OGRiYzIzIiwiY3JlYXRlZF9hdCI6IjIwMjQtMDMtMTFUMjE6Mzc6MjguNTMzNTg5In0.kTwV0eh4EZs-ajLuUSPy1fTiSckXVn62xkmyZiw2H1Y'
 API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-2-7b-chat-hf"
 
 

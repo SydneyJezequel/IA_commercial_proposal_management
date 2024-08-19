@@ -72,40 +72,162 @@ except Exception as e:
 
 
 """ **************** Retraitement du devis avec le LLM **************** """
-import requests
+from BO.model import Model
 
 
-# Votre clé API Hugging Face :
-api_key = config.TOKEN_QUOTATION_ANALYSIS
 
+# Initialisation du modèle :
+llm = Model()
 
-# Définir l'URL de l'API pour Llama 2 :
-api_url = config.API_URL
 
 
 def refine_text(text):
-    """ Méthode pour rafiner le texte """
-    # Préparation du Header :
-    headers = {
-        "Authorization": f"Bearer {api_key}"
+    """ Méthode pour rafiner le texte en utilisant Falcon 7B Instruct """
+    
+    # Préparation du prompt pour Falcon 7B
+    prompt = f"Corrigez et reformulez ce texte : {text}"
+    
+    # Initialisation des paramètres de l'input
+    top_k = 15
+    top_p = 0.1
+    temp = 0.1
+    max_length = 256
+    beam_size = 1
+    
+    # Préparation des données à envoyer à l'API
+    input_data = {
+        'prompt': prompt,
+        'top_k': top_k,
+        'top_p': top_p,
+        'temp': temp,
+        'max_length': max_length,
+        'beam_size': beam_size,
     }
-    # Préparation des données :
-    data = {
-    "inputs": f"Corrigez et reformulez ce texte : {text}"
-    }
-    # Faire la requête POST à l'API :
-    response = requests.post(api_url, api_key, headers=headers, json=data)
-    # Récupération de la réponse :
-    print("response : ", response)
-    print("response status_code : ", response.status_code)
-    print("reponse text : ", response.text)
-    generated_text = response.json()[0]['generated_text']
-    # Afficher la réponse :
-    print(generated_text)
-    return generated_text
 
+    try:
+        # Génération des réponses avec le modèle Falcon 7B :
+        output = llm.monster_client.generate(llm.model_name, input_data)
+        print("OUTPUT : ", output)
+        print("TYPE OUTPUT : ", type(output))
+        
+        # Récupération et affichage du texte généré :
+        generated_text = output[0]['generated_text']
+        print("Texte raffiné : ", generated_text)
+        return generated_text
+    
+    except Exception as e:
+        print(f"Erreur lors de la génération de texte : {e}")
+        return None
+
+
+
+
+# Exemple d'utilisation de la fonction refine_text
 refined_text = refine_text(extracted_text)
 print("refined_text : ", refined_text)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -205,6 +327,33 @@ except Exception as e:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 """ 
 ==> REFLEXION :
 Le code que vous avez partagé est principalement conçu pour effectuer des tâches de "Visual Question Answering" (VQA), qui implique de répondre à des questions sur des images. Cela signifie qu'il n'est pas directement adapté pour comparer deux devis et déterminer lequel a le meilleur prix, car cela nécessite une comparaison textuelle ou numérique entre deux ensembles de données textuelles (les devis) plutôt qu'une interprétation visuelle.
@@ -232,6 +381,24 @@ Si les devis sont très complexes, vous pourriez envisager de fine-tuner un mod�
 Conclusion
 Le code que vous avez partagé pourrait être adapté pour cette tâche, mais il nécessite des ajustements considérables. La stratégie la plus simple est de s'orienter vers un modèle NLP capable de traiter et comparer des textes pour déterminer lequel des deux devis est le plus économique. Vous pourriez également utiliser un modèle de type text2text pour cette comparaison, ou entraîner un modèle spécifique à partir d'un dataset de devis comparés.
 """
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
