@@ -3,7 +3,9 @@ MODEL_NAME = "paraphrase-MiniLM-L6-v2"
 IMAGE_PATH = "/Users/sjezequel/PycharmProjects/CommercialProposals/images/devis_3.png"
 
 
-
+# Accès à l'Api :
+TOKEN_QUOTATION_ANALYSIS = "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"
+API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-2-7b-chat-hf"
 
 
 

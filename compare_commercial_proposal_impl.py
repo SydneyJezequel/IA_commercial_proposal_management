@@ -55,16 +55,78 @@ try:
     print(extracted_text)
 
     # Nettoyage du texte extrait pour améliorer la reconnaissance des chiffres
-    cleaned_text = extracted_text.replace('€', '€ ')
-    cleaned_text = cleaned_text.replace('0', '0')
-    print(" **************************** TEXTE NETTOYÉ **************************** ")
-    print(cleaned_text)
-
+    # cleaned_text = extracted_text.replace('€', '€ ')
+    # cleaned_text = cleaned_text.replace('0', '0')
+    # print(" **************************** TEXTE NETTOYÉ **************************** ")
+    # print(cleaned_text)
 
 except pytesseract.TesseractError as e:
     print(f"Une erreur Tesseract s'est produite : {e}")
 except Exception as e:
     print(f"Une erreur est survenue : {e}")
+
+
+
+
+
+
+
+""" **************** Retraitement du devis avec le LLM **************** """
+import requests
+
+
+# Votre clé API Hugging Face :
+api_key = config.TOKEN_QUOTATION_ANALYSIS
+
+
+# Définir l'URL de l'API pour Llama 2 :
+api_url = config.API_URL
+
+
+def refine_text(text):
+    """ Méthode pour rafiner le texte """
+    # Préparation du Header :
+    headers = {
+        "Authorization": f"Bearer {api_key}"
+    }
+    # Préparation des données :
+    data = {
+    "inputs": f"Corrigez et reformulez ce texte : {text}"
+    }
+    # Faire la requête POST à l'API :
+    response = requests.post(api_url, api_key, headers=headers, json=data)
+    # Récupération de la réponse :
+    print("response : ", response)
+    print("response status_code : ", response.status_code)
+    print("reponse text : ", response.text)
+    generated_text = response.json()[0]['generated_text']
+    # Afficher la réponse :
+    print(generated_text)
+    return generated_text
+
+refined_text = refine_text(extracted_text)
+print("refined_text : ", refined_text)
+
+
+
+"""
+import openai
+
+def refine_text(text):
+    response = openai.Completion.create(
+        engine="gpt-4",  # Choisissez le modèle approprié
+        prompt=f"Corrigez et reformulez ce texte : {text}",
+        max_tokens=500
+    )
+    return response.choices[0].text.strip()
+
+refined_text = refine_text(extracted_text)
+"""
+
+
+
+
+
 
 
 
@@ -97,35 +159,8 @@ except Exception as e:
 
 
 
+
 """ **************** Comparer les devis **************** """
-
-"""
-import pytesseract
-from PIL import Image
-import spacy
-
-def extract_text_from_image(image_path):
-    # Charger l'image
-    image = Image.open(image_path)
-    # Extraire le texte avec Tesseract OCR
-    return pytesseract.image_to_string(image, lang='fra')
-
-def extract_info_from_text(text):
-    # Charger le modèle spaCy
-    nlp = spacy.load("fr_core_news_md")
-    doc = nlp(text)
-    data = {}
-    # Extraire les informations clés
-    for ent in doc.ents:
-        data[ent.label_] = ent.text
-    return data
-
-# Exemple d'utilisation
-image_path = 'devis_image.jpg'
-text = extract_text_from_image(image_path)
-info = extract_info_from_text(text)
-print(info)
-"""
 
 
 
