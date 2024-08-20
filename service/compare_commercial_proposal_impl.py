@@ -64,7 +64,7 @@ except Exception as e:
 
 
 """ **************** Retraitement du devis avec le LLM **************** """
-from model import Model
+from llm import Model
 
 
 
@@ -124,33 +124,6 @@ print("answer : ", answer)
 
 
 
-
-
-
-
-
-""" **************** Vérifier les informations des devis **************** """
-
-
-import spacy
-import fr_core_news_md
-
-
-try:
-    # Charger un modèle de langage français de spaCy
-    nlp = fr_core_news_md.load()
-
-    # Appliquer le modèle NLP sur le texte extrait
-    doc = nlp(extracted_text)
-
-    # Extraire les informations :
-    print(" **************************** INFORMATIONS RECUPEREES **************************** ")
-    for ent in doc.ents:
-        print(ent.label_, ent.text)
-except spacy.errors as e:
-    print(f"Une erreur Spacy s'est produite : {e}")
-except Exception as e:
-    print(f"Une erreur est survenue : {e}")
 
 
 

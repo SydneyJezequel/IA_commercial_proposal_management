@@ -8,7 +8,5 @@ MONSTER_API_KEY = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6ImM2OWRi
 
 
 # Paramètres des images à analyser :
-IMAGE_PATH = "/Users/sjezequel/PycharmProjects/CommercialProposals/quotations_files/devis_3.png"
-
-
+IMAGE_PATH = "/Users/sjezequel/PycharmProjects/CommercialProposals/quotations_files/"
 
