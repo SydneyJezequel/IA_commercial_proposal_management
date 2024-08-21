@@ -9,6 +9,9 @@ import os
 
 """ Exemple d'utilisation """
 
+# Question posée :
+question="Indique moi le montant total et l'entreprise émétrice pour chaque devis."
+
 # Images à traiter :
 images_to_process = ["devis_2.png", "devis_3.png", "processed_image.png"]  
 

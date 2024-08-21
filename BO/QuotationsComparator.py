@@ -65,7 +65,7 @@ class QuotationsComparator:
 
 
 
-    def compare_quotations(self, question="Indique moi le montant total et l'entreprise émétrice pour chaque devis."):
+    def compare_quotations(self, question="Affiche un tableau qui liste pour chaque devis, l'entreprise émétrice, le montant total du devis, les conditions de paiements, la durée de validité du devis."):
         """ Méthode qui compare les résultats des devis """
         self.process_quotations()
         llm = Llm()

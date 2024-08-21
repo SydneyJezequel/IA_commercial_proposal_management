@@ -17,27 +17,12 @@ class Llm:
 
     def generate_answer(self, prompt):
         """ Méthode qui interroge le modèle """
-
+        # Connexion à l'Api :
         client = OpenAI(
         base_url = config.MONSTER_API_URL,
         api_key = config.MONSTER_API_KEY
         )
-
-
-
-        """ PREMIERE VERSION """
-        """
-        completion = client.chat.completions.create(
-            model= "meta-llama/Meta-Llama-3-8B-Instruct" ,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.9,
-            top_p=0.9,
-            max_tokens=1000,
-            stream=True
-        )
-        """
-
-        """ VERSION DE TEST """
+        # Envoi de la requête au modèle :
         completion = client.chat.completions.create(
             model= "meta-llama/Meta-Llama-3-8B-Instruct",
             messages=[{"role": "user", "content": prompt}],
@@ -46,9 +31,7 @@ class Llm:
             max_tokens=500,
             stream=True
         )
-
-
-
+        # Traitement de la réponse :
         full_response = ""
         for chunk in completion:
             if chunk.choices[0].delta.content is not None:
