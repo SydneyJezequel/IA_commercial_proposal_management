@@ -19,3 +19,13 @@ DEPENDANCES UTILISEES :
 
 
 
+
+
+
+
+COMMANDES PERSO :
+
+export PYTHONPATH=/Users/sjezequel/PycharmProjects/CommercialProposals:$PYTHONPATH
+
+echo $PYTHONPATH
+

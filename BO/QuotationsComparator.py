@@ -58,9 +58,9 @@ class QuotationsComparator:
         """ Méthode qui analyse le texte extrait avec le LLM """
         results = []
         for text in self.processed_texts:
-            prompt = question + "\n" + text
+            prompt = f"{question} Répondez uniquement avec les informations clés en une seule ligne.\nTexte extrait:\n{text}"
             answer = llm.generate_answer(prompt)
-            results.append(answer)
+            results.append(answer.strip())
         return results
 
 
