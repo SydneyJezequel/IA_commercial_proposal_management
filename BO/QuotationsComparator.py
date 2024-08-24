@@ -17,7 +17,7 @@ class QuotationsComparator:
         """ Constructeur """
         self.image_paths = image_paths
         self.processed_texts = []
-
+        self.devis_data = []
 
 
     def preprocess_image(self, image_path):
