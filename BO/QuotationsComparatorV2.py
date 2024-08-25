@@ -3,6 +3,9 @@ import pytesseract
 from PIL import Image
 import cv2
 from BO.VectorDatabase import VectorDataBase
+from spellchecker import SpellChecker  # Utiliser le nom correct de la classe
+import os
+import config
 
 
 
@@ -37,32 +40,28 @@ class QuotationsComparatorV2:
 
     """ ***************** Méthode en charge du prétraitement et de l'extraction du texte des devis ***************** """
 
+
     def preprocess_image(self, image_path):
-        """ Méthode qui pré-traite l'image """
+        """ Méthode qui pré-traite l'image et sauvegarde dans le répertoire de sortie """
         print("IMAGE_PATH IN PREPROCESS_IMAGE : ", image_path)
-        img = cv2.imread(image_path, 1)
-        print("img : ", img)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        _, thresh_img = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
-        processed_image_path = image_path
+        # Lire l'image en niveaux de gris
+        img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+        # Appliquer l'égalisation d'histogramme
+        img = cv2.equalizeHist(img)
+        # Appliquer un filtre bilatéral pour réduire le bruit tout en gardant les contours nets
+        img = cv2.bilateralFilter(img, d=9, sigmaColor=75, sigmaSpace=75)
+        # Appliquer un seuillage adaptatif pour binariser l'image
+        thresh_img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                           cv2.THRESH_BINARY, 11, 2)
+        # Déterminer le chemin de l'image traitée en changeant le répertoire
+        processed_image_path = os.path.join(config.PROCESSED_QUOTATIONS_FILES_PATH, os.path.basename(image_path))
+        # Sauvegarder l'image traitée
         cv2.imwrite(processed_image_path, thresh_img)
         print("processed_image_path : ", processed_image_path)
         return processed_image_path
 
-    """
-    def preprocess_image(self, image_path):
-        # Méthode qui pré-traite l'image
-        print("IMAGE_PATH IN PREPROCESS_IMAGE : ", image_path)
-        img = cv2.imread(image_path, 1)
-        print("img : ", img)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        _, thresh_img = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
-        processed_image_path = 'processed_image.png'
-        cv2.imwrite(processed_image_path, thresh_img)
-        print("processed_image_path : ", processed_image_path)
-        return processed_image_path
-    """
 
+    
     def process_quotations(self):
         """ Méthode qui récupère les informations de chaque devis """
         print("EXECUTION METHODE process_quotations()")
@@ -79,9 +78,11 @@ class QuotationsComparatorV2:
             print("image_path : ", image_path)
             processed_image_path = self.preprocess_image(image_path)
             image = Image.open(processed_image_path)
-            extracted_text = pytesseract.image_to_string(image, lang='fra', config='--psm 6 --oem 3')
+            extracted_text = pytesseract.image_to_string(image, lang='fra', config='--psm 3 --oem 3')
             print("extracted_text par pytesseract : ", extracted_text)
-            return extracted_text
+            clean_text = self.clean_extracted_text(extracted_text)  # Correction de l'appel
+            print("clean_extracted_text :", clean_text)
+            return clean_text
         except pytesseract.TesseractError as e:
             print(f"Une erreur Tesseract s'est produite : {e}")
         except Exception as e:
@@ -90,6 +91,14 @@ class QuotationsComparatorV2:
 
 
 
+    def clean_extracted_text(self, text):
+        """ Corrige le texte extrait """
+        spell = SpellChecker(language='fr') 
+        cleaned_text = []
+        for word in text.split():
+            corrected_word = spell.correction(word)
+            cleaned_text.append(corrected_word if corrected_word else word)
+        return ' '.join(cleaned_text)
 
 
 
@@ -97,12 +106,14 @@ class QuotationsComparatorV2:
 
     """ ***************** Méthodes en charge de l'enregistrement des données des devis en BDD ***************** """
 
-    def store_texts_in_vector_db(self, text):
+
+
+    def store_texts_in_vector_db(self, text, devis_number):
         """ Méthode qui stocke les données des devis sous forme non structurée dans la BDD Vectorielle """
         print("EXECUTION METHODE : store_texts_in_vector_db")
         print("TEXT : ", text)
         embedding = self.vector_db.generate_embedding(text)  # Utilise le modèle de VectorDataBase pour générer l'embedding
-        metadata = {"Devis": f"Devis {len(self.processed_texts)}"}
+        metadata = {"Devis": f"Devis {devis_number}"}
         self.vector_db.insert(embedding, metadata=metadata)
 
 
@@ -118,11 +129,13 @@ class QuotationsComparatorV2:
         """ Méthode qui extrait les infos clés de chaque devis """
         print("EXECUTION METHODE extract_relevant_info()")
         print("TEXT : ", text)
-        devis_pattern = r"(?i)devis\s*(\d+|ref[\.:]?\s*\w+)"
-        enterprise_pattern = r"(?i)(entreprise|émetteur|société)[\.:]?\s*(.+)"
-        total_montant_pattern = r"(?i)montant[\s\w]*[\.:]?\s*(\d[\d\s,.€]*\d)"
-        conditions_pattern = r"(?i)conditions[\s\w]*[\.:]?\s*(.+)"
-        duree_validite_pattern = r"(?i)(validité|durée)[\s\w]*[\.:]?\s*(.+)"
+        
+        devis_pattern = r"(?i)devis[\s\W]*(\d+|ref[\.:]?\s*\w+)"
+        enterprise_pattern = r"(?i)(?:entreprise|émetteur|société)\s*[:\.-]?\s*(\w+.*)"
+        total_montant_pattern = r"(?i)montant[\s\w]*[:\.-]?\s*([\d\s,.]*\d+\s*€)"
+        conditions_pattern = r"(?i)conditions[\s\w]*[:\.-]?\s*(.+?)(?:\.|\n|$)"
+        duree_validite_pattern = r"(?i)(validité|durée)[\s\w]*[:\.-]?\s*(.+?)(?:\.|\n|$)"
+        
         info = {
             "Devis": self.extract_value_using_pattern(text, devis_pattern),
             "Entreprise": self.extract_value_using_pattern(text, enterprise_pattern),
@@ -130,6 +143,7 @@ class QuotationsComparatorV2:
             "Conditions": self.extract_value_using_pattern(text, conditions_pattern),
             "Validité": self.extract_value_using_pattern(text, duree_validite_pattern)
         }
+        print("infos récupérées : ", info)
         return info
 
 
@@ -150,12 +164,14 @@ class QuotationsComparatorV2:
         """ Méthode qui compare les devis """
         print("EXECUTION METHODE compare_quotations()")
         self.process_quotations()
-        for text in self.processed_texts:
-            # Stocker le texte brut dans la BDD vectorielle :
-            self.store_texts_in_vector_db(text)
-            # Extraire les infos structurées pour affichage comparatif :
+        for i, text in enumerate(self.extracted_texts):
+            # Stocker le texte brut dans la BDD vectorielle
+            self.store_texts_in_vector_db(text, i)
+            print("STOCKAGE EN BDD TERMINE")
+            # Extraire les infos structurées pour affichage comparatif
             info = self.extract_relevant_info(text)
             self.devis_data.append(info)
+            print("RECUPERATION DES INFOS CLES DES DEVIS : ", self.devis_data)
         self.display_comparison_table()
 
 

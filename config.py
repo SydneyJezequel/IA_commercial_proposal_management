@@ -1,5 +1,6 @@
 # Paramètres des images à analyser :
-IMAGE_PATH = "/Users/sjezequel/PycharmProjects/CommercialProposals/quotations_files/"
+QUOTATIONS_FILES_PATH = "/Users/sjezequel/PycharmProjects/CommercialProposals/ressources/quotations_files/"
+PROCESSED_QUOTATIONS_FILES_PATH = "/Users/sjezequel/PycharmProjects/CommercialProposals/ressources/processed_quotations_files/"
 
 
 # Modèle pré-entraîné pour la comparaison et la recherche de texte dans une BDD Vectorielle :

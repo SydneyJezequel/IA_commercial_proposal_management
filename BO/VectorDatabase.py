@@ -17,6 +17,7 @@ class VectorDataBase:
         # Initialisation du modèle d'Embedding :
         self.embedding_model = SentenceTransformer(config.VECTORIAL_BDD_MODEL)
         self.chroma_client = chromadb.Client()
+        self.collection = self.chroma_client.get_or_create_collection(name="my_collection")
 
 
 
@@ -42,9 +43,8 @@ class VectorDataBase:
     def insert(self, embedding, metadata):
         print("EXECUTION METHODE Insert()")
         print("EMBEDDING : ", embedding)
-        print("METADATA : ", metadata)
-        """ Méthode pour insérer un embedding dans la collection avec des métadonnées """
-        self.collection.add(embeddings=[embedding], documents=[metadata["Devis"]], metadata=metadata)
+        document = f"Devis: {metadata['Devis']}"
+        self.collection.add(embeddings=[embedding], documents=[document], ids=[metadata['Devis']])
 
 
 
