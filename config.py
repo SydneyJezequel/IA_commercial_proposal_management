@@ -15,3 +15,7 @@ MODEL_NAME = 'meta-llama/Meta-Llama-3-8B-Instruct'
 MONSTER_API_URL = "https://llm.monsterapi.ai/v1/"
 MONSTER_API_KEY = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6ImM2OWRiZjIyNjMyYzE0ZjA2YThiNjEwZmQ2OGRiYzIzIiwiY3JlYXRlZF9hdCI6IjIwMjQtMDMtMTFUMjE6Mzc6MjguNTMzNTg5In0.kTwV0eh4EZs-ajLuUSPy1fTiSckXVn62xkmyZiw2H1Y"
 
+
+# Liste des fichiers à traier :
+QUOTATIONS_FILES_LIST = ["Devis1.png", "Devis2.png", "Devis3.png", "Devis4.png", "Devis5.png", "processed_image.png"]
+

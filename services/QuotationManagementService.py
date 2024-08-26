@@ -12,7 +12,7 @@ import config
 
 
 
-class QuotationsComparatorV2:
+class QuotationManagementService:
     """ Classe chargée du traitement et de la comparaison des devis """
 
 
@@ -21,12 +21,13 @@ class QuotationsComparatorV2:
 
     """ ***************** Constructeur ***************** """
 
-    def __init__(self, image_paths):
+    def __init__(self):
         """ Constructeur """
         # Emplacements des images :
-        self.image_paths = image_paths
+        # self.image_paths = image_paths
+        self.image_paths = [os.path.join(config.QUOTATIONS_FILES_PATH, image) for image in config.QUOTATIONS_FILES_LIST]
+        print("Image paths initialized:", self.image_paths)
         # Contenu des devis :
-        # self.processed_texts = []
         self.extracted_texts = []
         # Liste des informations sur les devis :
         self.devis_data = [] 
@@ -188,4 +189,38 @@ class QuotationsComparatorV2:
         print("-" * (len(headers) * 20))
         for row in rows:
             print(f"{' | '.join(row)}")
+
+
+
+    def execute_full_comparison(self):
+        """ Méthode encapsulant tout le processus de traitement et de comparaison des devis """
+        print("Début de l'exécution complète")
+
+        # Création des chemins des images
+        images_to_process = config.QUOTATIONS_FILES_LIST
+        images_to_process_paths = [os.path.join(config.QUOTATIONS_FILES_PATH, image) for image in images_to_process]
+        print("Récupération des chemins : OK.")
+
+        # Création de l'instance de la BDD Vectorielle
+        vector_db_mock = VectorDataBase()
+        print("Instanciation de la BDD : OK.")
+
+        # Création de l'instance de QuotationsComparatorV2
+        print("comparator.image_paths : ", self.image_paths)
+        print("Instanciation de la classe QuotationsComparator + Vérification des chemins ==> OK")
+
+        # Simulation du texte extrait pour chaque image
+        extracted_texts = [self.extract_text(image_path) for image_path in images_to_process_paths]
+        print("Extract_texts : ", extracted_texts)
+        print("Extraction du texte dans chaque Image : OK.")
+
+        # Affichage du tableau comparatif et stockage des devis en BDD Vectorielle
+        self.compare_quotations()
+        print("Stockage des données dans la BDD Vectorielle réalisé par cette méthode ==> OK")
+        print("Récupération des infos clés des devis ==> OK.")
+
+        print("********** FIN DES TESTS ************")
+
+
+
 

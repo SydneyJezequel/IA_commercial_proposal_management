@@ -1,7 +1,7 @@
 import pytesseract
 from PIL import Image
 import cv2
-from .Llm import Llm
+from ..BO.Llm import Llm
 
 
 
