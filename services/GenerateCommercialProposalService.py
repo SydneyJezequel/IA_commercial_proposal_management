@@ -1,4 +1,5 @@
 from BO.VectorDatabase import VectorDataBase
+from BO.Llm import Llm
 
 
 
@@ -15,21 +16,26 @@ class GenerateCommercialProposalService:
 
     def __init__(self):
         """ Constructeur """
-        # Bdd Vectorielle :
+        # Instanciation de la BDD Vectorielle :
         self.vector_db = VectorDataBase()
+        # Instanciation du LLM :
+        self.llm = Llm()
 
 
 
 
     """ ***************** Méthodes ***************** """
 
-    def generate_commercial_proposal(self):
+    def test(self):
         """ Méthode qui génère une offre commerciale en fonction des devis """
         print("Offre commerciale générée.")
         return "Offre commerciale générée."
 
+            
 
-
+    def generate_commercial_proposal(self):
+        """ Méthode qui génère la proposition commerciale en fonction des devis concurrents et des informations de l'entreprise """
+        return self.llm.generate_commercial_proposal()
 
 
 
@@ -46,7 +52,7 @@ class GenerateCommercialProposalService:
             return False
 
             
-
+    
     def get_llm_embedding_answer(self, input_question):
         # Méthode qui répond aux questions
         # Préparation des paramètres de la question :
@@ -58,6 +64,6 @@ class GenerateCommercialProposalService:
         print("CONTEXT : ", context)
         # Génération de la réponse :
         response = self.llm_model.generate_enriched_answer(question, context=context)
-        return response
+        return response            
     """
 

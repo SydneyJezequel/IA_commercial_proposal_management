@@ -205,7 +205,6 @@ class QuotationManagementService:
         vector_db_mock = VectorDataBase()
         print("Instanciation de la BDD : OK.")
 
-        # Création de l'instance de QuotationsComparatorV2
         print("comparator.image_paths : ", self.image_paths)
         print("Instanciation de la classe QuotationsComparator + Vérification des chemins ==> OK")
 

@@ -3,6 +3,10 @@ QUOTATIONS_FILES_PATH = "/Users/sjezequel/PycharmProjects/CommercialProposals/re
 PROCESSED_QUOTATIONS_FILES_PATH = "/Users/sjezequel/PycharmProjects/CommercialProposals/ressources/processed_quotations_files/"
 
 
+# Données commercial de notre compagnie :
+COMPANY_COMMERCIAL_DATA = "/Users/sjezequel/PycharmProjects/CommercialProposals/ressources/commercial_context_dataset.jsonl"
+
+
 # Modèle pré-entraîné pour la comparaison et la recherche de texte dans une BDD Vectorielle :
 VECTORIAL_BDD_MODEL = 'sentence-transformers/multi-qa-MiniLM-L6-cos-v1'
 

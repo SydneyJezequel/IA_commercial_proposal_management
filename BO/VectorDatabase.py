@@ -1,6 +1,7 @@
 import chromadb
 from sentence_transformers import SentenceTransformer
 import config
+import json
 
 
 
@@ -16,8 +17,12 @@ class VectorDataBase:
         """ Constructeur """
         # Initialisation du modèle d'Embedding :
         self.embedding_model = SentenceTransformer(config.VECTORIAL_BDD_MODEL)
+        # Initialisation de la BDD Vectorielle :
         self.chroma_client = chromadb.Client()
+        # Chargement des données contenues dans les devis :
         self.collection = self.chroma_client.get_or_create_collection(name="my_collection")
+        # Chargement du fichier de données de l'entreprise à partir du fichier "commercial_context_dataset" :
+        self.load_commercial_context_dataset(config.COMPANY_COMMERCIAL_DATA)
 
 
 
@@ -55,3 +60,20 @@ class VectorDataBase:
         print(" N RESULT : ", n_results)
         query_embeddings = self.generate_embedding(query)
         return self.collection.query(query_embeddings=query_embeddings, n_results=n_results)
+
+
+
+    def load_commercial_context_dataset(self, dataset_path):
+        """ Méthode pour charger et insérer les données du dataset dans la base vectorielle """
+        try:
+            print('EXECUTION METHODE load_commercial_context_dataset()')
+            # dataset_path = "ressources/commercial_context_dataset.jsonl"  # Chemin relatif du fichier
+            # dataset_path = config.COMPANY_COMMERCIAL_DATA
+            with open(dataset_path, 'r') as file:
+                dataset = [json.loads(line) for line in file]  # Charger chaque ligne du fichier jsonl
+            # Charger les données dans la BDD vectorielle :
+            self.populate_vectors(dataset)
+            print(f"Dataset chargé et inséré dans la base vectorielle depuis {dataset_path}")
+        except Exception as e:
+            print(f"Erreur lors du chargement du dataset : {e}")
+
