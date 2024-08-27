@@ -6,6 +6,7 @@ from BO.VectorDatabase import VectorDataBase
 from spellchecker import SpellChecker  # Utiliser le nom correct de la classe
 import os
 import config
+from BO.Devis import Devis
 
 
 
@@ -107,8 +108,6 @@ class QuotationManagementService:
 
     """ ***************** Méthodes en charge de l'enregistrement des données des devis en BDD ***************** """
 
-
-
     def store_texts_in_vector_db(self, text, devis_number):
         """ Méthode qui stocke les données des devis sous forme non structurée dans la BDD Vectorielle """
         print("EXECUTION METHODE : store_texts_in_vector_db")
@@ -128,24 +127,60 @@ class QuotationManagementService:
 
     def extract_relevant_info(self, text):
         """ Méthode qui extrait les infos clés de chaque devis """
-        print("EXECUTION METHODE extract_relevant_info()")
-        print("TEXT : ", text)
-        
-        devis_pattern = r"(?i)devis[\s\W]*(\d+|ref[\.:]?\s*\w+)"
-        enterprise_pattern = r"(?i)(?:entreprise|émetteur|société)\s*[:\.-]?\s*(\w+.*)"
-        total_montant_pattern = r"(?i)montant[\s\w]*[:\.-]?\s*([\d\s,.]*\d+\s*€)"
-        conditions_pattern = r"(?i)conditions[\s\w]*[:\.-]?\s*(.+?)(?:\.|\n|$)"
-        duree_validite_pattern = r"(?i)(validité|durée)[\s\w]*[:\.-]?\s*(.+?)(?:\.|\n|$)"
-        
+        # Regex pour extraire les informations :
+        devis_pattern = r"Devis n°\s*:\s*(\d+)"
+        enterprise_pattern = r"Société\s*:\s*(.+)"
+        adresse_entreprise_pattern = r"Adresse\s*:\s*(.+)"
+        date_pattern = r"Date\s*:\s*(\d{2}/\d{2}/\d{4})"
+        client_pattern = r"Client\s*:\s*(.+)"
+        adresse_client_pattern = r"Adresse\s*:\s*(.+)"
+        code_postal_client_pattern = r"Code Postale\s*:\s*(\d+)"
+        description_pattern = r"Pose d'une nouvelle chaudière"
+        total_ht_pattern = r"TOTAL HT\s*(\d+,\d{2})\s*€"
+        taux_tva_pattern = r"TAUX TVA\s*(\d+%)"
+        total_ttc_pattern = r"TOTAL TTC\s*(\d+,\d{2})\s*€"
+        debut_travaux_pattern = r"Début des travaux\s*:\s*(\d{2}/\d{2}/\d{4})"
+        conditions_pattern = r"Conditions de règlement\s*:\s*(.+)"
+        # Dictionnaire regroupant les données d'un devis :
+        print("text : ", text)
         info = {
             "Devis": self.extract_value_using_pattern(text, devis_pattern),
             "Entreprise": self.extract_value_using_pattern(text, enterprise_pattern),
-            "Montant": self.extract_value_using_pattern(text, total_montant_pattern),
+            "Adresse Entreprise": self.extract_value_using_pattern(text, adresse_entreprise_pattern),
+            "Date": self.extract_value_using_pattern(text, date_pattern),
+            "Client": self.extract_value_using_pattern(text, client_pattern),
+            "Adresse Client": self.extract_value_using_pattern(text, adresse_client_pattern),
+            "Code Postal Client": self.extract_value_using_pattern(text, code_postal_client_pattern),
+            "Description": description_pattern,  # Assumé fixe dans cet exemple
+            "Montant Total": self.extract_value_using_pattern(text, total_ht_pattern),
+            "Taux TVA": self.extract_value_using_pattern(text, taux_tva_pattern),
+            "Total TTC": self.extract_value_using_pattern(text, total_ttc_pattern),
             "Conditions": self.extract_value_using_pattern(text, conditions_pattern),
-            "Validité": self.extract_value_using_pattern(text, duree_validite_pattern)
+            "Début Travaux": self.extract_value_using_pattern(text, debut_travaux_pattern)
         }
-        print("infos récupérées : ", info)
+        print("INFO : ", info)
         return info
+
+
+
+    def map_data_to_devis(self, data):
+        """ Méthode qui mappe les données extraites à une instance de la classe Devis """
+        devis_instance = Devis(
+            devis=data.get('Devis', 'Non spécifié'),
+            entreprise=data.get('Entreprise', 'Non spécifié'),
+            adresse_entreprise=data.get('Adresse Entreprise', 'Non spécifié'),
+            date=data.get('Date', 'Non spécifié'),
+            client=data.get('Client', 'Non spécifié'),
+            adresse_client=data.get('Adresse Client', 'Non spécifié'),
+            code_postal_client=data.get('Code Postal Client', 'Non spécifié'),
+            description=data.get('Description', ''),
+            montant_total=data.get('Montant Total', 'Non spécifié'),
+            taux_tva=data.get('Taux TVA', 'Non spécifié'),
+            total_ttc=data.get('Total TTC', 'Non spécifié'),
+            conditions=data.get('Conditions', 'Non spécifié'),
+            debut_travaux=data.get('Début Travaux', 'Non spécifié')
+        )
+        return devis_instance
 
 
 
@@ -162,29 +197,43 @@ class QuotationManagementService:
 
 
     def compare_quotations(self):
-        """ Méthode qui compare les devis """
-        print("EXECUTION METHODE compare_quotations()")
+        """ Method to compare quotations by converting them into instances of the Quotation class """
+        print("EXECUTING METHOD compare_quotations()")
         self.process_quotations()
+
         for i, text in enumerate(self.extracted_texts):
-            # Stocker le texte brut dans la BDD vectorielle
-            self.store_texts_in_vector_db(text, i)
-            print("STOCKAGE EN BDD TERMINE")
-            # Extraire les infos structurées pour affichage comparatif
+            # Extract structured information
             info = self.extract_relevant_info(text)
-            self.devis_data.append(info)
-            print("RECUPERATION DES INFOS CLES DES DEVIS : ", self.devis_data)
+            
+            # Transform into a Quotation instance before storing in the vector database
+            quotation_instance = self.map_data_to_devis(info)
+            print("DEVIS INTEGRE EN BDD : ", quotation_instance)
+
+            # Store the Quotation instance (or its text representation) in the vector database
+            self.store_texts_in_vector_db(str(quotation_instance), i)
+            print("STORAGE IN VECTOR DB COMPLETED")
+
+            # Add the Quotation instance to self.devis_data
+            self.devis_data.append(quotation_instance)
+            print("RETRIEVING KEY QUOTATION INFORMATION: ", self.devis_data)
+        
         self.display_comparison_table()
 
 
 
     def display_comparison_table(self):
-        """ Affichage des devis dans un tableau comparatif """
-        print("EXECUTION METHODE display_comparison_table()")
+        """ Display the quotations in a comparative table """
+        print("EXECUTING METHOD display_comparison_table()")
         headers = ["Devis", "Entreprise", "Montant", "Conditions", "Validité"]
+        
         rows = []
         for data in self.devis_data:
-            rows.append([data.get(header, "Non spécifié") for header in headers])
-        # Afficher sous forme de tableau
+            rows.append([
+                getattr(data, header.lower(), "Non spécifié")  # Access attributes dynamically
+                for header in headers
+            ])
+        
+        # Print the table
         print(f"{' | '.join(headers)}")
         print("-" * (len(headers) * 20))
         for row in rows:
