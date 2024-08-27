@@ -1,11 +1,13 @@
 OBJECTIF DE CE PROJET :
-
 Cette fonctionnalité utilise de l'IA pour :
 1- Comparer des offres commercial en fonction d'un besoin.
 2- Rédiger un argumentaire commercial pour positionner l'une des offres par rapport aux autres.
 
-Remarques : Ce projet utilise un LLM via une Api. Dans un contexte professionnel, un LLM maison doit être utilisé pour assurer la confidentialité de vos données.
 
+
+REMARQUES PREALABLES :
+* Ce projet utilise un LLM via une Api. Dans un contexte professionnel, un LLM propre à l'entreprise doit être utilisé pour assurer la confidentialité de vos données.
+* Le dataset utilisé est composé de devis tous basés sur le même format. Dans un contexte professionnel, il faut améliorer les traitements pour gérer d'autres formats de devis avec des résolutions parfois plus faible.
 
 
 
@@ -24,14 +26,10 @@ Puis suivez les logs d'exécution de cette fonctionnalité dans votre IDE.
 
 
 
-
 MODELES UTILISEES :
-
 * Le modèle utilisé pour récupéré pour récupérer les informations textuelles dans les devis est modèle un OCR (Optical Character Recognition).
-
 * Le LLM utilisé est LLAMA3 via MONSTER API : 
 https://monsterapi.ai/user/playground?model=meta-llama/Meta-Llama-3-8B-Instruct
-
 
 
 
@@ -39,13 +37,8 @@ DEPENDANCES UTILISEES :
 
 
 
-
-
-
-
 COMMANDES PERSO :
 
 export PYTHONPATH=/Users/sjezequel/PycharmProjects/CommercialProposals:$PYTHONPATH
 echo $PYTHONPATH
-
 
