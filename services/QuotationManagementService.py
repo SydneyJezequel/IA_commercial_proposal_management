@@ -262,6 +262,7 @@ class QuotationManagementService:
 
     def map_data_to_devis(self, data):
         """ Méthode qui mappe les données extraites à une instance de la classe Devis """
+        print("DEVIS CHARGE DANS LA METHODE map_data_to_devis : ", data)
         devis_instance = Devis(
             devis=data.get('Devis', 'Non spécifié'),
             entreprise=data.get('Entreprise', 'Non spécifié'),
@@ -277,6 +278,21 @@ class QuotationManagementService:
             conditions=data.get('Conditions', 'Non spécifié'),
             debut_travaux=data.get('Début Travaux', 'Non spécifié')
         )
+        print("VALEUR AFFECTEES AU DEVIS : ")
+        print(f"Devis: {data.get('Devis', 'Non spécifié')}")
+        print(f"Entreprise: {data.get('Entreprise', 'Non spécifié')}")
+        print(f"Adresse Entreprise: {data.get('Adresse Entreprise', 'Non spécifié')}")
+        print(f"Date: {data.get('Date', 'Non spécifié')}")
+        print(f"Client: {data.get('Client', 'Non spécifié')}")
+        print(f"Adresse Client: {data.get('Adresse Client', 'Non spécifié')}")
+        print(f"Code Postal Client: {data.get('Code Postal Client', 'Non spécifié')}")
+        print(f"Description: {data.get('Description', '')}")
+        print(f"Montant Total: {data.get('Montant Total', 'Non spécifié')}")
+        print(f"Taux TVA: {data.get('Taux TVA', 'Non spécifié')}")
+        print(f"Total TTC: {data.get('Total TTC', 'Non spécifié')}")
+        print(f"Conditions: {data.get('Conditions', 'Non spécifié')}")
+        print(f"Début Travaux: {data.get('Début Travaux', 'Non spécifié')}")
+        print("DEVIS INSTANCE GENEREE : ", devis_instance)
         return devis_instance
 
 
@@ -301,7 +317,7 @@ class QuotationManagementService:
         for i, text in enumerate(self.extracted_texts):
             # Extract structured information
             info = self.extract_relevant_info(text)
-            
+            print("DEVIS RECUPERE : ", info)
             # Transform into a Quotation instance before storing in the vector database
             quotation_instance = self.map_data_to_devis(info)
             print("DEVIS INTEGRE EN BDD : ", quotation_instance)
