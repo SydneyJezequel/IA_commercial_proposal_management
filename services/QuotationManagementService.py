@@ -1,3 +1,5 @@
+import json
+import math
 import re
 import pytesseract
 from PIL import Image
@@ -7,6 +9,7 @@ from spellchecker import SpellChecker  # Utiliser le nom correct de la classe
 import os
 import config
 from BO.Devis import Devis
+from BO.Llm import Llm
 
 
 
@@ -126,39 +129,133 @@ class QuotationManagementService:
     """ ***************** Méthodes en charge de la récupération et de l'affichage des données clés ***************** """
 
     def extract_relevant_info(self, text):
-        """ Méthode qui extrait les infos clés de chaque devis """
-        # Regex pour extraire les informations :
-        devis_pattern = r"Devis n°\s*:\s*(\d+)"
-        enterprise_pattern = r"Société\s*:\s*(.+)"
-        adresse_entreprise_pattern = r"Adresse\s*:\s*(.+)"
-        date_pattern = r"Date\s*:\s*(\d{2}/\d{2}/\d{4})"
-        client_pattern = r"Client\s*:\s*(.+)"
-        adresse_client_pattern = r"Adresse\s*:\s*(.+)"
-        code_postal_client_pattern = r"Code Postale\s*:\s*(\d+)"
-        description_pattern = r"Pose d'une nouvelle chaudière"
-        total_ht_pattern = r"TOTAL HT\s*(\d+,\d{2})\s*€"
-        taux_tva_pattern = r"TAUX TVA\s*(\d+%)"
-        total_ttc_pattern = r"TOTAL TTC\s*(\d+,\d{2})\s*€"
-        debut_travaux_pattern = r"Début des travaux\s*:\s*(\d{2}/\d{2}/\d{4})"
-        conditions_pattern = r"Conditions de règlement\s*:\s*(.+)"
-        # Dictionnaire regroupant les données d'un devis :
-        print("text : ", text)
-        info = {
-            "Devis": self.extract_value_using_pattern(text, devis_pattern),
-            "Entreprise": self.extract_value_using_pattern(text, enterprise_pattern),
-            "Adresse Entreprise": self.extract_value_using_pattern(text, adresse_entreprise_pattern),
-            "Date": self.extract_value_using_pattern(text, date_pattern),
-            "Client": self.extract_value_using_pattern(text, client_pattern),
-            "Adresse Client": self.extract_value_using_pattern(text, adresse_client_pattern),
-            "Code Postal Client": self.extract_value_using_pattern(text, code_postal_client_pattern),
-            "Description": description_pattern,  # Assumé fixe dans cet exemple
-            "Montant Total": self.extract_value_using_pattern(text, total_ht_pattern),
-            "Taux TVA": self.extract_value_using_pattern(text, taux_tva_pattern),
-            "Total TTC": self.extract_value_using_pattern(text, total_ttc_pattern),
-            "Conditions": self.extract_value_using_pattern(text, conditions_pattern),
-            "Début Travaux": self.extract_value_using_pattern(text, debut_travaux_pattern)
+        """Méthode qui extrait les infos clés de chaque devis en utilisant un LLM avec prétraitement et validation."""
+        # Étape 1 : Prétraitement du texte
+        preprocessed_text = self.preprocess_text(text)
+        
+        # Étape 2 : Génération de la requête pour le LLM en demandant un JSON structuré
+        llm_prompt = f"""
+        Voici un texte de devis. Extrais les informations suivantes et renvoie les sous forme de JSON structuré :
+        {{
+            "Numéro de devis": "",
+            "Société": "",
+            "Adresse de la société": "",
+            "Date du devis": "",
+            "Nom du client": "",
+            "Adresse du client": "",
+            "Code Postal du client": "",
+            "Description du travail": "",
+            "Montant total HT": "",
+            "Taux de TVA": "",
+            "Montant total TTC": "",
+            "Début des travaux": "",
+            "Conditions de règlement": ""
+        }}
+        
+        Texte :
+        {preprocessed_text}
+        """
+        
+        # Étape 3 : Interaction avec le LLM pour extraire les informations
+        llm = Llm()
+        response = llm.generate_answer(llm_prompt)
+        print("RESPONSE OBTENUE DU LLM : ", response)
+        
+        # Étape 4 : Vérification si la réponse est un JSON valide
+        response_dict = self.manual_parse_llm_response(response)
+        print("REPONSE RECUPEREE AVEC manual_parse_llm_response() : ", response_dict)
+
+        # Étape 5 : Parsing et validation des données extraites
+        info = self.parse_and_validate_llm_response(response_dict)
+        print("RESPONSE PARSÉE DU LLM : ", info)
+        return info
+
+
+
+    def manual_parse_llm_response(self, response_text):
+        """Méthode pour extraire manuellement les données du texte brut en cas d'échec du parsing JSON."""
+        # Étape 1 : Extraction de la partie JSON de la réponse
+        json_start = response_text.find("{")
+        json_end = response_text.rfind("}")
+        if json_start != -1 and json_end != -1:
+            # Extraire la chaîne JSON potentielle
+            json_potential = response_text[json_start:json_end + 1]
+            # Étape 2 : Tenter de parser cette chaîne comme JSON
+            try:
+                info = json.loads(json_potential)
+                return info  # Si succès, retourner l'objet JSON parsé
+            except json.JSONDecodeError:
+                print("Erreur : La partie extraite ne peut pas être parsée en JSON.")
+        # Si on arrive ici, cela signifie que le JSON n'a pas pu être extrait correctement
+        print("Erreur : Impossible de trouver un JSON valide dans la réponse.")
+        # Optionnel : Retourner un dictionnaire vide ou un message d'erreur structuré
+        return {
+            "Devis": "Non spécifié",
+            "Entreprise": "Non spécifié",
+            "Adresse Entreprise": "Non spécifié",
+            "Date": "Non spécifié",
+            "Client": "Non spécifié",
+            "Adresse Client": "Non spécifié",
+            "Code Postal Client": "Non spécifié",
+            "Description": "Non spécifié",
+            "Montant Total": "Non spécifié",
+            "Taux TVA": "Non spécifié",
+            "Total TTC": "Non spécifié",
+            "Conditions": "Non spécifié",
+            "Début Travaux": "Non spécifié"
         }
-        print("INFO : ", info)
+
+
+
+
+    def preprocess_text(self, text):
+        """Méthode pour prétraiter le texte avant l'extraction."""
+        # Remplacement des caractères spéciaux, uniformisation des montants, etc.
+        text = text.replace("€", " EUR")  # Remplace le symbole € par EUR pour uniformiser
+        text = re.sub(r'(\d+)[.,](\d{2})', r'\1.\2', text)  # Uniformise les montants 1.800,00 en 1800.00
+        text = re.sub(r'\s+', ' ', text)  # Supprime les espaces multiples pour éviter les erreurs de lecture
+        return text
+
+
+
+    def parse_and_validate_llm_response(self, response):
+        """Méthode pour parser et valider la réponse du LLM."""
+        # Parsing de la réponse
+        info = {
+            "Devis": response.get('Numéro de devis', 'Non spécifié'),
+            "Entreprise": response.get('Société', 'Non spécifié'),
+            "Adresse Entreprise": response.get('Adresse de la société', 'Non spécifié'),
+            "Date": response.get('Date du devis', 'Non spécifié'),
+            "Client": response.get('Nom du client', 'Non spécifié'),
+            "Adresse Client": response.get('Adresse du client', 'Non spécifié'),
+            "Code Postal Client": response.get('Code Postal du client', 'Non spécifié'),
+            "Description": response.get('Description du travail', 'Non spécifié'),
+            "Montant Total": response.get('Montant total HT', 'Non spécifié'),
+            "Taux TVA": response.get('Taux de TVA', 'Non spécifié'),
+            "Total TTC": response.get('Montant total TTC', 'Non spécifié'),
+            "Conditions": response.get('Conditions de règlement', 'Non spécifié'),
+            "Début Travaux": response.get('Début des travaux', 'Non spécifié')
+        }
+        # Validation et correction des données extraites
+        info = self.validate_and_correct_info(info)
+        return info
+
+
+
+    def validate_and_correct_info(self, info):
+        """Méthode pour valider et corriger les informations extraites."""
+        # Validation du montant total, du taux de TVA et du montant TTC
+        if info['Montant Total'] != 'Non spécifié' and info['Taux TVA'] != 'Non spécifié' and info['Total TTC'] != 'Non spécifié':
+            try:
+                montant_ht = float(info['Montant Total'].replace(',', '.').replace(' EUR', ''))
+                taux_tva = float(info['Taux TVA'].replace('%', '')) / 100
+                total_ttc_calculated = montant_ht * (1 + taux_tva)
+                total_ttc_extracted = float(info['Total TTC'].replace(',', '.').replace(' EUR', ''))
+                if not math.isclose(total_ttc_calculated, total_ttc_extracted, rel_tol=1e-2):
+                    info['Total TTC'] = f"{total_ttc_calculated:.2f} EUR"  # Correction du montant TTC si nécessaire
+            except ValueError:
+                print("Erreur de conversion lors de la validation des montants.")
+        # Autres validations spécifiques peuvent être ajoutées ici
         return info
 
 
