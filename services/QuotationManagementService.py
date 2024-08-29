@@ -1,15 +1,13 @@
 import json
 import math
 import re
-import pytesseract
-from PIL import Image
-import cv2
 from BO.VectorDatabase import VectorDataBase
-from spellchecker import SpellChecker  # Utiliser le nom correct de la classe
 import os
 import config
 from BO.Devis import Devis
 from BO.Llm import Llm
+from services.DevisDatabaseService import DevisDatabaseService
+from services.GetQuotationsDataService import GetQuotationsDataService
 
 
 
@@ -22,88 +20,18 @@ class QuotationManagementService:
 
 
 
-
     """ ***************** Constructeur ***************** """
 
-    def __init__(self):
+    def __init__(self, db_url=config.DB_URL):
         """ Constructeur """
-        # Emplacements des images :
-        # self.image_paths = image_paths
-        self.image_paths = [os.path.join(config.QUOTATIONS_FILES_PATH, image) for image in config.QUOTATIONS_FILES_LIST]
-        print("Image paths initialized:", self.image_paths)
-        # Contenu des devis :
-        self.extracted_texts = []
+        # Service qui récupère le texte des devis :
+        self.get_quotations_data_service = GetQuotationsDataService()
         # Liste des informations sur les devis :
         self.devis_data = [] 
         # Bdd Vectorielle :
         self.vector_db = VectorDataBase()
-
-
-
-
-
-
-    """ ***************** Méthode en charge du prétraitement et de l'extraction du texte des devis ***************** """
-
-
-    def preprocess_image(self, image_path):
-        """ Méthode qui pré-traite l'image et sauvegarde dans le répertoire de sortie """
-        print("IMAGE_PATH IN PREPROCESS_IMAGE : ", image_path)
-        # Lire l'image en niveaux de gris
-        img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-        # Appliquer l'égalisation d'histogramme
-        img = cv2.equalizeHist(img)
-        # Appliquer un filtre bilatéral pour réduire le bruit tout en gardant les contours nets
-        img = cv2.bilateralFilter(img, d=9, sigmaColor=75, sigmaSpace=75)
-        # Appliquer un seuillage adaptatif pour binariser l'image
-        thresh_img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                           cv2.THRESH_BINARY, 11, 2)
-        # Déterminer le chemin de l'image traitée en changeant le répertoire
-        processed_image_path = os.path.join(config.PROCESSED_QUOTATIONS_FILES_PATH, os.path.basename(image_path))
-        # Sauvegarder l'image traitée
-        cv2.imwrite(processed_image_path, thresh_img)
-        print("processed_image_path : ", processed_image_path)
-        return processed_image_path
-
-
-    
-    def process_quotations(self):
-        """ Méthode qui récupère les informations de chaque devis """
-        print("EXECUTION METHODE process_quotations()")
-        for image_path in self.image_paths:
-            text = self.extract_text(image_path)
-            self.extracted_texts.append(text)
-
-
-
-    def extract_text(self, image_path):
-        """ Méthode qui utilise Tesseract pour extraire le texte """
-        print("EXECUTION METHODE extract_text()")
-        try:
-            print("image_path : ", image_path)
-            processed_image_path = self.preprocess_image(image_path)
-            image = Image.open(processed_image_path)
-            extracted_text = pytesseract.image_to_string(image, lang='fra', config='--psm 3 --oem 3')
-            print("extracted_text par pytesseract : ", extracted_text)
-            clean_text = self.clean_extracted_text(extracted_text)  # Correction de l'appel
-            print("clean_extracted_text :", clean_text)
-            return clean_text
-        except pytesseract.TesseractError as e:
-            print(f"Une erreur Tesseract s'est produite : {e}")
-        except Exception as e:
-            print(f"Une erreur est survenue lors du traitement de {image_path} : {e}")
-        return ""
-
-
-
-    def clean_extracted_text(self, text):
-        """ Corrige le texte extrait """
-        spell = SpellChecker(language='fr') 
-        cleaned_text = []
-        for word in text.split():
-            corrected_word = spell.correction(word)
-            cleaned_text.append(corrected_word if corrected_word else word)
-        return ' '.join(cleaned_text)
+        # Initialisation de la BDD SQLlite :
+        self.sql_service = DevisDatabaseService()
 
 
 
@@ -219,43 +147,42 @@ class QuotationManagementService:
 
 
     def parse_and_validate_llm_response(self, response):
-        """Méthode pour parser et valider la réponse du LLM."""
-        # Parsing de la réponse
-        info = {
-            "Devis": response.get('Numéro de devis', 'Non spécifié'),
-            "Entreprise": response.get('Société', 'Non spécifié'),
-            "Adresse Entreprise": response.get('Adresse de la société', 'Non spécifié'),
-            "Date": response.get('Date du devis', 'Non spécifié'),
-            "Client": response.get('Nom du client', 'Non spécifié'),
-            "Adresse Client": response.get('Adresse du client', 'Non spécifié'),
-            "Code Postal Client": response.get('Code Postal du client', 'Non spécifié'),
-            "Description": response.get('Description du travail', 'Non spécifié'),
-            "Montant Total": response.get('Montant total HT', 'Non spécifié'),
-            "Taux TVA": response.get('Taux de TVA', 'Non spécifié'),
-            "Total TTC": response.get('Montant total TTC', 'Non spécifié'),
-            "Conditions": response.get('Conditions de règlement', 'Non spécifié'),
-            "Début Travaux": response.get('Début des travaux', 'Non spécifié')
+        """ Méthode pour parser et valider la réponse du LLM. """
+        # Parsing de la réponse et normalisation
+        normalized_info = {
+            'devis': response.get('Numéro de devis', 'Non spécifié'),
+            'entreprise': response.get('Société', 'Non spécifié'),
+            'adresse_entreprise': response.get('Adresse de la société', 'Non spécifié'),
+            'date': response.get('Date du devis', 'Non spécifié'),
+            'client': response.get('Nom du client', 'Non spécifié'),
+            'adresse_client': response.get('Adresse du client', 'Non spécifié'),
+            'code_postal_client': response.get('Code Postal du client', 'Non spécifié'),
+            'description': response.get('Description du travail', 'Non spécifié'),
+            'montant_total': float(response.get('Montant total HT', '0 EUR').replace(' EUR', '')),
+            'taux_tva': float(response.get('Taux de TVA', '0%').replace('%', '')),
+            'total_ttc': float(response.get('Montant total TTC', '0 EUR').replace(' EUR', '')),
+            'conditions': response.get('Conditions de règlement', 'Non spécifié'),
+            'debut_travaux': response.get('Début des travaux', 'Non spécifié')
         }
         # Validation et correction des données extraites
-        info = self.validate_and_correct_info(info)
-        return info
+        normalized_info = self.validate_and_correct_info(normalized_info)
+        return normalized_info
 
 
 
     def validate_and_correct_info(self, info):
         """Méthode pour valider et corriger les informations extraites."""
         # Validation du montant total, du taux de TVA et du montant TTC
-        if info['Montant Total'] != 'Non spécifié' and info['Taux TVA'] != 'Non spécifié' and info['Total TTC'] != 'Non spécifié':
+        if (info['montant_total'] != 0.0) and (info['taux_tva'] != 0.0) and (info['total_ttc'] != 0.0):
             try:
-                montant_ht = float(info['Montant Total'].replace(',', '.').replace(' EUR', ''))
-                taux_tva = float(info['Taux TVA'].replace('%', '')) / 100
+                montant_ht = info['montant_total']  # Directement depuis normalized_info
+                taux_tva = info['taux_tva'] / 100  # Normalisé
                 total_ttc_calculated = montant_ht * (1 + taux_tva)
-                total_ttc_extracted = float(info['Total TTC'].replace(',', '.').replace(' EUR', ''))
+                total_ttc_extracted = info['total_ttc']  # Normalisé
                 if not math.isclose(total_ttc_calculated, total_ttc_extracted, rel_tol=1e-2):
-                    info['Total TTC'] = f"{total_ttc_calculated:.2f} EUR"  # Correction du montant TTC si nécessaire
+                    info['total_ttc'] = f"{total_ttc_calculated:.2f} EUR"  # Correction du montant TTC si nécessaire
             except ValueError:
                 print("Erreur de conversion lors de la validation des montants.")
-        # Autres validations spécifiques peuvent être ajoutées ici
         return info
 
 
@@ -310,11 +237,38 @@ class QuotationManagementService:
 
 
     def compare_quotations(self):
-        """ Method to compare quotations by converting them into instances of the Quotation class """
+        """ Méthode pour comparer les devis """
         print("EXECUTING METHOD compare_quotations()")
-        self.process_quotations()
+        self.get_quotations_data_service.process_quotations()
+        print("TEXT RECUPERE DANS LES DEVIS : ", self.get_quotations_data_service.extracted_texts)
 
-        for i, text in enumerate(self.extracted_texts):
+        # Traitement de chaque devis :
+        for i, text in enumerate(self.get_quotations_data_service.extracted_texts):
+            # Extraire les informations structurées
+            info = self.extract_relevant_info(text)
+            print("DEVIS RECUPERE : ", info)
+
+            # Créer et enregistrer une instance de Devis en BDD
+            devis_instance = self.sql_service.create_devis(info)
+            print("DEVIS INTEGRE EN BDD : ", devis_instance)
+
+            # Ajouter l'instance de Devis à self.devis_data
+            self.devis_data.append(devis_instance)
+            print("RETRIEVING KEY QUOTATION INFORMATION: ", self.devis_data)
+        
+        print("AFFICHAGE DE TOUS LES DEVIS EN BDD SQLITE : ", self.sql_service.get_all_devis)
+        self.display_comparison_table()
+
+
+
+    # ==> ANCIENNE VERSION :
+    """
+    def compare_quotations(self):
+        # Method to compare quotations by converting them into instances of the Quotation class
+        print("EXECUTING METHOD compare_quotations()")
+        self.get_quotations_data_service.process_quotations()
+
+        for i, text in enumerate(self.get_quotations_data_service.extracted_texts):
             # Extract structured information
             info = self.extract_relevant_info(text)
             print("DEVIS RECUPERE : ", info)
@@ -322,15 +276,15 @@ class QuotationManagementService:
             quotation_instance = self.map_data_to_devis(info)
             print("DEVIS INTEGRE EN BDD : ", quotation_instance)
 
-            # Store the Quotation instance (or its text representation) in the vector database
             self.store_texts_in_vector_db(str(quotation_instance), i)
-            print("STORAGE IN VECTOR DB COMPLETED")
+            # print("STORAGE IN VECTOR DB COMPLETED")
 
             # Add the Quotation instance to self.devis_data
             self.devis_data.append(quotation_instance)
             print("RETRIEVING KEY QUOTATION INFORMATION: ", self.devis_data)
         
         self.display_comparison_table()
+    """
 
 
 
@@ -367,11 +321,8 @@ class QuotationManagementService:
         vector_db_mock = VectorDataBase()
         print("Instanciation de la BDD : OK.")
 
-        print("comparator.image_paths : ", self.image_paths)
-        print("Instanciation de la classe QuotationsComparator + Vérification des chemins ==> OK")
-
         # Simulation du texte extrait pour chaque image
-        extracted_texts = [self.extract_text(image_path) for image_path in images_to_process_paths]
+        extracted_texts = [self.get_quotations_data_service.extract_text(image_path) for image_path in images_to_process_paths]
         print("Extract_texts : ", extracted_texts)
         print("Extraction du texte dans chaque Image : OK.")
 
