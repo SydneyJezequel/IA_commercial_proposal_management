@@ -273,34 +273,6 @@ class QuotationManagementService:
 
 
 
-    # ==> ANCIENNE VERSION :
-    """
-    def compare_quotations(self):
-        # Method to compare quotations by converting them into instances of the Quotation class
-        print("EXECUTING METHOD compare_quotations()")
-        self.get_quotations_data_service.process_quotations()
-
-        for i, text in enumerate(self.get_quotations_data_service.extracted_texts):
-            # Extract structured information
-            info = self.extract_relevant_info(text)
-            print("DEVIS RECUPERE : ", info)
-            # Transform into a Quotation instance before storing in the vector database
-            quotation_instance = self.map_data_to_devis(info)
-            print("DEVIS INTEGRE EN BDD : ", quotation_instance)
-
-            self.store_texts_in_vector_db(str(quotation_instance), i)
-            # print("STORAGE IN VECTOR DB COMPLETED")
-
-            # Add the Quotation instance to self.devis_data
-            self.devis_data.append(quotation_instance)
-            print("RETRIEVING KEY QUOTATION INFORMATION: ", self.devis_data)
-        
-        self.display_comparison_table()
-    """
-
-
-
-
     def display_comparison_table(self):
         """ Retrieve and return the quotations in a comparative list """
         print("EXECUTING METHOD display_comparison_table()")
@@ -338,30 +310,6 @@ class QuotationManagementService:
 
 
 
-
-    # ==> ANCIENNE VERSION :
-    """
-    def display_comparison_table(self):
-        # Display the quotations in a comparative table
-        print("EXECUTING METHOD display_comparison_table()")
-        headers = ["Devis", "Entreprise", "Montant", "Conditions", "Validité"]
-        
-        rows = []
-        for data in self.devis_data:
-            rows.append([
-                getattr(data, header.lower(), "Non spécifié")  # Access attributes dynamically
-                for header in headers
-            ])
-        
-        # Print the table
-        print(f"{' | '.join(headers)}")
-        print("-" * (len(headers) * 20))
-        for row in rows:
-            print(f"{' | '.join(row)}")
-    """
-
-
-
     def execute_full_comparison(self):
         """ Méthode encapsulant tout le processus de traitement et de comparaison des devis """
         print("Début de l'exécution complète")
@@ -370,10 +318,6 @@ class QuotationManagementService:
         images_to_process = config.QUOTATIONS_FILES_LIST
         images_to_process_paths = [os.path.join(config.QUOTATIONS_FILES_PATH, image) for image in images_to_process]
         print("Récupération des chemins : OK.")
-
-        # Création de l'instance de la BDD Vectorielle
-        vector_db_mock = VectorDataBase()
-        print("Instanciation de la BDD : OK.")
 
         # Simulation du texte extrait pour chaque image
         extracted_texts = [self.get_quotations_data_service.extract_text(image_path) for image_path in images_to_process_paths]
@@ -386,7 +330,4 @@ class QuotationManagementService:
         print("Récupération des infos clés des devis ==> OK.")
 
         print("********** FIN DES TESTS ************")
-
-
-
 

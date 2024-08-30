@@ -74,7 +74,7 @@ class DevisDatabaseService:
 
 
     def get_all_devis(self):
-        """ Méthode qui récupère tous les devis en BDD """
+        """ Méthode qui récupère tous les devis en BDD. """
         session = self.Session()
         devis_list = []
         try:

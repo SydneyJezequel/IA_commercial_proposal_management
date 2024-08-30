@@ -31,7 +31,7 @@ MONSTER_API_KEY = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6ImM2OWRi
 
 
 # Liste des fichiers à traier :
-QUOTATIONS_FILES_LIST = ["Devis1.png", "Devis2.png", "Devis3.png", "Devis4.png", "Devis5.png", "processed_image.png"]
+QUOTATIONS_FILES_LIST = ["Devis1.png", "Devis2.png", "Devis3.png", "Devis4.png", "Devis5.png"]
 
 
 
@@ -42,4 +42,5 @@ ADRESSE_SOCIETE = "123 Rue de Verdun 29200 Brest"
 DATE_DEVIS = "2024-08-29"
 NOM_CLIENT = "Client Exemple"
 DEBUT_TRAVAUX = "2024-09-01"
+RABAIS_APPLIQUE = "0.95"
 

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from openai import OpenAI
 import config
 from BO.VectorDatabase import VectorDataBase
@@ -46,10 +47,6 @@ class Llm:
 
 
 
-
-
-    # ******************************* METHODE EN COURS DE MODIFICATION ******************************* #
-
     def generate_commercial_proposal(self):
         print("Exécution de generate_commercial_proposal() ")
         """ Méthode qui utilise le modèle pour générer une offre commerciale. """
@@ -60,15 +57,33 @@ class Llm:
         print("ATOUTS DE NOTRE ENTREPRISE : ", data_context)
 
         # Récupération de la liste des devis concurrents : 
-        liste_devis =  self.sql_service.get_all_devis()
-        print("LISTE DES DEVIS CONCURRENTS : ", liste_devis)
+        devis_list =  self.sql_service.get_all_devis()
+        print("LISTE DES DEVIS CONCURRENTS : ", devis_list)
+
+        # Filtrage des devis pour exclure ceux avec un montant total de 0.00
+        valid_devis_list = [devis for devis in devis_list if devis.montant_total > 0.00 and devis.entreprise != "Non spécifié"]
+        
+        # Vérification si nous avons des devis valides
+        if not valid_devis_list:
+            raise ValueError("Aucun devis valide trouvé.")
+    
+        # Détermination du devis le plus bas
+        lowest_quote = min(devis.montant_total for devis in valid_devis_list)
+        print("DEVIS LE PLUS BAS : ", lowest_quote)
+
+        # Convertir 0.95 en Decimal
+        reduction = Decimal(config.RABAIS_APPLIQUE)
+
+        # Appliquer la réduction
+        reduced_quote = lowest_quote * reduction
+        print("DEVIS APRES REDUCTION : ", reduced_quote)
 
         # Préparation du prompt en suivant le format Llama 3
         prompt = (
             "system\n"
             "You are an AI assistant specialized in generating highly competitive commercial proposals based on specific company information and competitor quotes. Ensure the proposal offers a lower total cost, more flexible payment conditions, and the earliest possible start date. Additionally, any cost reductions must be justified with strategic choices, such as the use of alternative materials, volume discounts, etc.\n"
             "user\n"
-            f"Génère un devis qui est 5% moins cher que le devis le plus bas des concurrents, tout en garantissant que le montant total reste réaliste et justifié par des choix stratégiques tels que l'utilisation de matériaux alternatifs ou des réductions sur les volumes."
+            f"Génère un devis qui est 5% moins cher que le devis le plus bas des concurrents. Le montant total doit être égal à {reduced_quote} et justifié par des choix stratégiques tels que l'utilisation de matériaux alternatifs ou des réductions sur les volumes."
             "Les informations du devis doivent être renseignées dans le JSON suivant. Les informations déjà renseignées sont à conserver :\n"
             "{{\n"
             "    \"Numéro de devis\": \"" + config.NUMERO_DEVIS + "\",\n"
@@ -86,7 +101,7 @@ class Llm:
             "    \"Conditions de règlement\": \"\"\n"
             "}}\n"
             f"Détails au suje de notre société : {data_context}\n"
-            f"Liste des devis concurents : {liste_devis}\n"
+            f"Liste des devis concurents : {devis_list}\n"
             "assistant\n"
         )
         # Connexion à l'API
@@ -95,14 +110,18 @@ class Llm:
             api_key=config.MONSTER_API_KEY
         )
         # Envoi de la requête au modèle
-        completion = client.chat.completions.create(
-            model=config.MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,  # Réduire pour une réponse plus déterministe
-            top_p=0.8,        # Limiter les choix pour une réponse plus prévisible
-            max_tokens=500,
-            stream=True
-        )
+        try:
+            completion = client.chat.completions.create(
+                model=config.MODEL_NAME,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,  # Réduire pour une réponse plus déterministe
+                top_p=0.8,        # Limiter les choix pour une réponse plus prévisible
+                max_tokens=500,
+                stream=True
+            )
+        except Exception as e:
+            print(f"Une erreur s'est produite lors de l'appel à l'API : {e}")
+            return {"error": str(e)}    
         # Traitement de la réponse avec validation des justifications
         full_response = ""
         for chunk in completion:
@@ -114,10 +133,6 @@ class Llm:
         print("DEVIS FINAL RENVOYE : ", validated_response)
         return validated_response
 
-    # ******************************* METHODE EN COURS DE MODIFICATION ******************************* #
-
-
-    
 
 
     def validate_and_adjust_response(self, response):
@@ -126,183 +141,4 @@ class Llm:
         if "justification" not in response.lower():
             response += "\n(Note: Please ensure that all cost reductions are justified with strategic choices such as alternative materials, volume discounts, or other viable strategies.)"
         return response
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    """
-    def generate_commercial_proposal(self):
-        # Méthode qui utilise le modèle pour générer une offre commerciale
-        # Récupération des informations contextuelles
-        context = "En vue de créer une offre commerciale et de nous positionner par rapport à nos concurrents, récupère les spécificités de notre entreprise et les devis des concurrents."
-        data_context = self.vector_database.search_context(context)
-        
-        # Préparation du prompt en suivant le format Llama 3 :
-        prompt = (
-            "<|begin_of_text|>"
-            "<|start_header_id|>system<|end_header_id|>"
-            "You are an AI assistant specialized in generating highly competitive commercial proposals based on specific company information and competitor quotes. Ensure the proposal offers a lower total cost, more flexible payment conditions, and the earliest possible start date. Additionally, any cost reductions must be justified with strategic choices, such as the use of alternative materials, volume discounts, etc.<|eot_id|>"
-            "<|start_header_id|>user<|end_header_id|>"
-            f"Génère une offre commerciale qui surpasse les devis des concurrents en réduisant le coût total, en assouplissant les conditions de paiement, et en proposant la date de début des travaux la plus proche possible. Assure-toi que les réductions de coûts sont justifiées par des choix stratégiques. Détails : {data_context}<|eot_id|>"
-            "<|start_header_id|>assistant<|end_header_id|>"
-        )
-        
-        # Connexion à l'API
-        client = OpenAI(
-            base_url=config.MONSTER_API_URL,
-            api_key=config.MONSTER_API_KEY
-        )
-        
-        # Envoi de la requête au modèle
-        completion = client.chat.completions.create(
-            model=config.MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,  # Réduire pour une réponse plus déterministe
-            top_p=0.8,        # Limiter les choix pour une réponse plus prévisible
-            max_tokens=500,
-            stream=True
-        )
-        
-        # Traitement de la réponse
-        full_response = ""
-        for chunk in completion:
-            if chunk.choices[0].delta.content is not None:
-                full_response += chunk.choices[0].delta.content
-        
-        return full_response
-    """
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # ==> VERSION 2 :
-    """
-    def generate_commercial_proposal(self):
-        # Méthode qui utilise le modèle pour générer une offre commerciale
-        # Récupération des informations contextuelles
-        context = "En vue de créer une offre commerciale et de nous positionner par rapport à nos concurrents, récupère les spécificités de notre entreprise et les devis des concurrents."
-        data_context = self.vector_database.search_context(context)
-        
-        # Préparation du prompt en suivant le format Llama 3
-        prompt = (
-            "<|begin_of_text|>"
-            "<|start_header_id|>system<|end_header_id|>"
-            "You are an AI assistant specialized in generating commercial proposals based on company-specific information and competitor quotes.<|eot_id|>"
-            "<|start_header_id|>user<|end_header_id|>"
-            f"Génère moi une offre commerciale en prenant en compte les spécificités de notre entreprise et les devis des concurrents. Voici les détails : {data_context}<|eot_id|>"
-            "<|start_header_id|>assistant<|end_header_id|>"
-        )
-        
-        # Connexion à l'API
-        client = OpenAI(
-            base_url=config.MONSTER_API_URL,
-            api_key=config.MONSTER_API_KEY
-        )
-        
-        # Envoi de la requête au modèle
-        completion = client.chat.completions.create(
-            model=config.MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,  # Réduire pour une réponse plus déterministe
-            top_p=0.8,        # Limiter les choix pour une réponse plus prévisible
-            max_tokens=500,
-            stream=True
-        )
-        
-        # Traitement de la réponse
-        full_response = ""
-        for chunk in completion:
-            if chunk.choices[0].delta.content is not None:
-                full_response += chunk.choices[0].delta.content
-        
-        return full_response
-    """
-
-
-
-
-
-
-
-
-
-
-
-    # ==> VERSION 1 :
-    """
-    def generate_commercial_proposal(self):
-        # Méthode qui utilise le modèle pour générer une offre commerciale
-        # Préparation du prompt :
-        question = "Génère moi une offre commercial en prenant en compte les spécificités de notre entreprise et les devis des concurrents"
-        context = "En vue de créer une offre commercial et de nous positionner par rapport à nos concurrents, récupère les spécificités de notre entreprise et les devis des concurrents"
-        data_context = self.vector_database.search_context(context)
-        prompt = {
-            "question": question,
-            "context": data_context
-        }
-        # Connexion à l'Api :
-        client = OpenAI(
-        base_url = config.MONSTER_API_URL,
-        api_key = config.MONSTER_API_KEY
-        )
-        # Envoi de la requête au modèle :
-        completion = client.chat.completions.create(
-            model= config.MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,  # Réduire pour une réponse plus déterministe
-            top_p=0.8,        # Limiter les choix pour une réponse plus prévisible
-            max_tokens=500,
-            stream=True
-        )
-        # Traitement de la réponse :
-        full_response = ""
-        for chunk in completion:
-            if chunk.choices[0].delta.content is not None:
-                full_response += chunk.choices[0].delta.content
-        return full_response
-    """
-
-
-
 
