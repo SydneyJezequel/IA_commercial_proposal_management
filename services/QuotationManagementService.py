@@ -135,7 +135,6 @@ class QuotationManagementService:
 
 
 
-
     def preprocess_text(self, text):
         """Méthode pour prétraiter le texte avant l'extraction."""
         # Remplacement des caractères spéciaux, uniformisation des montants, etc.
@@ -158,20 +157,33 @@ class QuotationManagementService:
             'adresse_client': response.get('Adresse du client', 'Non spécifié'),
             'code_postal_client': response.get('Code Postal du client', 'Non spécifié'),
             'description': response.get('Description du travail', 'Non spécifié'),
-            'montant_total': float(response.get('Montant total HT', '0 EUR').replace(' EUR', '')),
-            'taux_tva': float(response.get('Taux de TVA', '0%').replace('%', '')),
-            'total_ttc': float(response.get('Montant total TTC', '0 EUR').replace(' EUR', '')),
+            'montant_total': float(self.normalize_and_convert_amount(response.get('Montant total HT', '0 EUR').replace(' EUR', ''))),
+            'taux_tva': float(self.normalize_and_convert_amount(response.get('Taux de TVA', '0%').replace('%', ''))),
+            'total_ttc': float(self.normalize_and_convert_amount(response.get('Montant total TTC', '0 EUR').replace(' EUR', ''))),
             'conditions': response.get('Conditions de règlement', 'Non spécifié'),
             'debut_travaux': response.get('Début des travaux', 'Non spécifié')
         }
+        print("INFO RECUPEREE : ", normalized_info)
         # Validation et correction des données extraites
         normalized_info = self.validate_and_correct_info(normalized_info)
         return normalized_info
 
 
 
+    def normalize_and_convert_amount(self, amount_str):
+        """ Méthode qui supprime les séparateurs de milliers et remplace les virgules par des points. """
+        try:
+            # Suppression des espaces et changement des , par des points :
+            normalized_amount = amount_str.replace(' ', '').replace(',', '.')
+            return float(normalized_amount)
+        except ValueError as e:
+            print(f"Erreur de conversion : {e} avec la chaîne '{amount_str}'")
+            return 0.0  # Return a default value or handle appropriately
+
+
+
     def validate_and_correct_info(self, info):
-        """Méthode pour valider et corriger les informations extraites."""
+        """ Méthode pour valider et corriger les informations extraites. """
         # Validation du montant total, du taux de TVA et du montant TTC
         if (info['montant_total'] != 0.0) and (info['taux_tva'] != 0.0) and (info['total_ttc'] != 0.0):
             try:
@@ -256,7 +268,7 @@ class QuotationManagementService:
             self.devis_data.append(devis_instance)
             print("RETRIEVING KEY QUOTATION INFORMATION: ", self.devis_data)
         
-        print("AFFICHAGE DE TOUS LES DEVIS EN BDD SQLITE : ", self.sql_service.get_all_devis)
+        print("AFFICHAGE DE TOUS LES DEVIS EN BDD SQLITE : ", self.sql_service.get_all_devis())
         self.display_comparison_table()
 
 
@@ -288,8 +300,49 @@ class QuotationManagementService:
 
 
 
+
     def display_comparison_table(self):
-        """ Display the quotations in a comparative table """
+        """ Retrieve and return the quotations in a comparative list """
+        print("EXECUTING METHOD display_comparison_table()")
+        
+        # Récupérer tous les devis depuis la base de données
+        all_devis = self.sql_service.get_all_devis()
+
+        headers = ["Devis", "Entreprise", "Montant", "Conditions", "Validité"]
+        
+        # Correspondance entre les headers et les attributs des objets devis
+        attribute_mapping = {
+            "Devis": "devis",
+            "Entreprise": "entreprise",
+            "Montant": "montant_total",
+            "Conditions": "conditions",
+            "Validité": "date"  # Remplacer par l'attribut approprié si besoin
+        }
+        
+        devis_list = []
+        for devis in all_devis:
+            devis_dict = {
+                header: getattr(devis, attribute_mapping[header], "Non spécifié")
+                for header in headers
+            }
+            devis_list.append(devis_dict)
+        
+        print("DEVIS LIST RENVOYEE : ", devis_list)
+        # Optionnel : affichage de la liste dans la console pour vérification
+        print(f"{' | '.join(headers)}")
+        print("-" * (len(headers) * 20))
+        for devis in devis_list:
+            print(f"{' | '.join(map(str, devis.values()))}")
+        
+        return devis_list
+
+
+
+
+    # ==> ANCIENNE VERSION :
+    """
+    def display_comparison_table(self):
+        # Display the quotations in a comparative table
         print("EXECUTING METHOD display_comparison_table()")
         headers = ["Devis", "Entreprise", "Montant", "Conditions", "Validité"]
         
@@ -305,6 +358,7 @@ class QuotationManagementService:
         print("-" * (len(headers) * 20))
         for row in rows:
             print(f"{' | '.join(row)}")
+    """
 
 
 
