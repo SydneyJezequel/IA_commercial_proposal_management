@@ -1,6 +1,7 @@
 from openai import OpenAI
 import config
 from BO.VectorDatabase import VectorDataBase
+from services.DevisDatabaseService import DevisDatabaseService
 
 
 
@@ -15,6 +16,8 @@ class Llm:
     def __init__(self):
         """ Constructeur """
         self.vector_database = VectorDataBase()
+        # Initialisation de la BDD SQLlite :
+        self.sql_service = DevisDatabaseService()
 
 
 
@@ -50,25 +53,22 @@ class Llm:
     def generate_commercial_proposal(self):
         print("Exécution de generate_commercial_proposal() ")
         """ Méthode qui utilise le modèle pour générer une offre commerciale. """
-        # ****** TEST ******** #
-        print("********************** TEST ************************")
-        db_vectorielle = VectorDataBase()
-        documents = db_vectorielle.retrieve_all_documents()
-        print(" TOUS LES DOCUMENTS DE LA BDD VECTORIELLE avec retrieve_all_documents() : ", documents)
-        documents2 = db_vectorielle.search_context()
-        print(" TOUS LES DOCUMENTS DE LA BDD VECTORIELLE avec db_vectorielle.search_context() : ", documents2)
-        print("********************** TEST ************************")
-        # ****** TEST ******** #
-        # Récupération des informations contextuelles
-        context = "En vue de créer un devis, récupère les spécificités de notre entreprise et les devis des concurrents."
+
+        # Récupération de nos informations commerciales :
+        context = "En vue de créer un devis, récupère les éléments suivants relatifs à notre entreprise : les économies réalisées grâce à nous, nos avantages compétitifs, l’historique de nos projets , nos avantages tarifaire, nos références clients."
         data_context = self.vector_database.search_context(context)
-        print("CONTEXT ENVOYE : ", data_context)
+        print("ATOUTS DE NOTRE ENTREPRISE : ", data_context)
+
+        # Récupération de la liste des devis concurrents : 
+        liste_devis =  self.sql_service.get_all_devis()
+        print("LISTE DES DEVIS CONCURRENTS : ", liste_devis)
+
         # Préparation du prompt en suivant le format Llama 3
         prompt = (
             "system\n"
             "You are an AI assistant specialized in generating highly competitive commercial proposals based on specific company information and competitor quotes. Ensure the proposal offers a lower total cost, more flexible payment conditions, and the earliest possible start date. Additionally, any cost reductions must be justified with strategic choices, such as the use of alternative materials, volume discounts, etc.\n"
             "user\n"
-            f"Génère un devis qui surpasse les devis des concurrents en réduisant le coût total, en assouplissant les conditions de paiement, et en proposant la date de début des travaux la plus proche possible. Assure-toi que les réductions de coûts sont justifiées par des choix stratégiques. "
+            f"Génère un devis qui est 5% moins cher que le devis le plus bas des concurrents, tout en garantissant que le montant total reste réaliste et justifié par des choix stratégiques tels que l'utilisation de matériaux alternatifs ou des réductions sur les volumes."
             "Les informations du devis doivent être renseignées dans le JSON suivant. Les informations déjà renseignées sont à conserver :\n"
             "{{\n"
             "    \"Numéro de devis\": \"" + config.NUMERO_DEVIS + "\",\n"
@@ -85,7 +85,8 @@ class Llm:
             "    \"Début des travaux\": \"\",\n"
             "    \"Conditions de règlement\": \"\"\n"
             "}}\n"
-            f"Détails : {data_context}\n"
+            f"Détails au suje de notre société : {data_context}\n"
+            f"Liste des devis concurents : {liste_devis}\n"
             "assistant\n"
         )
         # Connexion à l'API
@@ -107,10 +108,10 @@ class Llm:
         for chunk in completion:
             if chunk.choices[0].delta.content:
                 full_response += chunk.choices[0].delta.content
-        print("FULL RESPONSE RECUPEREE : ", full_response)        
+        print("REPONSE RENVOYEE PAR LE LLM : ", full_response)        
         # Validation et ajustement des justifications
         validated_response = self.validate_and_adjust_response(full_response)
-        print("VALIDATED_REPONSE RECUPEREE : ", validated_response)
+        print("DEVIS FINAL RENVOYE : ", validated_response)
         return validated_response
 
     # ******************************* METHODE EN COURS DE MODIFICATION ******************************* #
