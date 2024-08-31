@@ -1,8 +1,6 @@
 from fastapi import FastAPI
-from services.QuotationManagementService import QuotationManagementService
+from services.QuotationProcessingService import QuotationProcessingService
 from services.GenerateCommercialProposalService import GenerateCommercialProposalService
-
-
 
 
 
@@ -18,13 +16,9 @@ from services.GenerateCommercialProposalService import GenerateCommercialProposa
 
 
 
-
-
 """ **************************************** Chargement de l'Api **************************************** """
 
 app = FastAPI()
-
-
 
 
 
@@ -42,21 +36,19 @@ async def pong():
 
 
 
-
-
-""" **************************** Manipulation du modèle LLM **************************** """
+""" **************************** Endpoints des Fonctionnalités **************************** """
 
 @app.get("/load-quotations")
 async def load_quotations():
-    """ Controller qui charge les devis et les informations de l'entreprise dans la BDD vectorielle """
-    quotationManagementService = QuotationManagementService()
+    """ Fonctionnalité qui charge les devis et les données de notre entreprise en BDD """
+    quotationManagementService = QuotationProcessingService()
     return {quotationManagementService.load_quotations()}
 
 
 
 @app.get("/generate-commercial-proposal")
 async def generate_commercial_proposal():
-    """ Méthode qui génère la proposition commerciale en fonction des devis concurrents et des informations de l'entreprise """
+    """ Fonctionnalité qui génère la proposition commerciale en fonction des devis concurrents et des informations de l'entreprise """
     generateCommercialProposalService = GenerateCommercialProposalService()
     return {"message": generateCommercialProposalService.generate_commercial_proposal()}
 

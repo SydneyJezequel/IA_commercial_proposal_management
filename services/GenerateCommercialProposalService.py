@@ -6,12 +6,9 @@ from BO.Llm import Llm
 
 
 class GenerateCommercialProposalService:
-    """ Classe chargée de la génération d'une offre commercial en fonction des devis existants """
+    """ Service qui génère une offre commercial en fonction des devis et information de notre entreprise """
 
 
-
-
-    """ ***************** Constructeur ***************** """
 
     def __init__(self):
         """ Constructeur """
@@ -19,11 +16,8 @@ class GenerateCommercialProposalService:
         self.llm = Llm()
 
 
-
-
-    """ ***************** Méthodes ***************** """
             
     def generate_commercial_proposal(self):
-        """ Méthode qui génère la proposition commerciale en fonction des devis concurrents et des informations de l'entreprise """
+        """ Méthode qui génère la proposition commerciale """
         return self.llm.generate_commercial_proposal()
 

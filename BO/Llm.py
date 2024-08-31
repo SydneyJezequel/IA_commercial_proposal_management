@@ -20,18 +20,18 @@ class Llm:
 
 
     def generate_answer(self, prompt):
-        """ Méthode qui interroge le modèle """
-        # Connexion à l'Api :
+        """ Méthode qui interroge le Llm """
+        # Config de l'Api :
         client = OpenAI(
         base_url = config.MONSTER_API_URL,
         api_key = config.MONSTER_API_KEY
         )
-        # Envoi de la requête au modèle :
+        # Exécution de la requête :
         completion = client.chat.completions.create(
             model= "meta-llama/Meta-Llama-3-8B-Instruct",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,  # Réduire pour une réponse plus déterministe
-            top_p=0.8,        # Limiter les choix pour une réponse plus prévisible
+            temperature=0.1,
+            top_p=0.8,
             max_tokens=500,
             stream=True
         )
@@ -45,40 +45,14 @@ class Llm:
 
 
     def generate_commercial_proposal(self):
-        print("Exécution de generate_commercial_proposal() ")
-        """ Méthode qui utilise le modèle pour générer une offre commerciale. """
-
+        """ Méthode génère une offre commerciale via le LLM. """
         # Récupération de nos informations commerciales :
-        context = "En vue de créer un devis, récupère les éléments suivants relatifs à notre entreprise : les économies réalisées grâce à nous, nos avantages compétitifs, l’historique de nos projets , nos avantages tarifaire, nos références clients."
-        self.vector_database = VectorDataBase()
-        data_context = self.vector_database.search_context(context)
-        print("ATOUTS DE NOTRE ENTREPRISE : ", data_context)
-
-        # Récupération de la liste des devis concurrents : 
-        sql_service = SqlDatabase()
-        devis_list =  sql_service.get_all_devis()
-        print("LISTE DES DEVIS CONCURRENTS : ", devis_list)
-
-        # Filtrage des devis pour exclure ceux avec un montant total de 0.00
-        valid_devis_list = [devis for devis in devis_list if devis.montant_total > 0.00 and devis.entreprise != "Non spécifié"]
-        
-        # Vérification si nous avons des devis valides
-        if not valid_devis_list:
-            raise ValueError("Aucun devis valide trouvé.")
-    
-        # Détermination du devis le plus bas
-        lowest_quote = min(devis.montant_total for devis in valid_devis_list)
-        print("DEVIS LE PLUS BAS : ", lowest_quote)
-
-        # Convertir 0.95 en Decimal
-        reduction = Decimal(config.RABAIS_APPLIQUE)
-
-        # Appliquer la réduction
-        reduced_quote = lowest_quote * reduction
-        print("DEVIS APRES REDUCTION : ", reduced_quote)
-
-        # Préparation du prompt en suivant le format Llama 3
-           # Préparation du prompt en suivant le format Llama 3
+        data_context = self.get_company_info()
+        # Récupération des devis concurrents : 
+        valid_devis_list = self.get_competitor_quotes()
+        # Détermination du devis le plus bas et application de la réduction :
+        reduced_quote = self.calculate_reduced_quote(valid_devis_list)
+        # Préparation du prompt :
         prompt = (
             "system\n"
             "Vous êtes un assistant IA spécialisé dans la génération d'offres commerciales très compétitives basées sur des informations spécifiques à l'entreprise et des devis concurrents. Assurez-vous que l'offre propose un coût total inférieur, des conditions de paiement plus flexibles et la date de début des travaux la plus rapide possible. De plus, toute réduction de coût doit être justifiée par des choix stratégiques, tels que l'utilisation de matériaux alternatifs, des remises sur les volumes, etc.\n"
@@ -104,12 +78,12 @@ class Llm:
             f"Liste des devis concurrents : {valid_devis_list}\n"
             "assistant\n"
         )
-        # Connexion à l'API
+        # Config de l'Api :
         client = OpenAI(
             base_url=config.MONSTER_API_URL,
             api_key=config.MONSTER_API_KEY
         )
-        # Envoi de la requête au modèle
+        # Exécution de la requête :
         try:
             completion = client.chat.completions.create(
                 model=config.MODEL_NAME,
@@ -122,23 +96,66 @@ class Llm:
         except Exception as e:
             print(f"Une erreur s'est produite lors de l'appel à l'API : {e}")
             return {"error": str(e)}    
-        # Traitement de la réponse avec validation des justifications
+        # Traitement de la réponse :
         full_response = ""
         for chunk in completion:
             if chunk.choices[0].delta.content:
                 full_response += chunk.choices[0].delta.content
-        print("REPONSE RENVOYEE PAR LE LLM : ", full_response)        
-        # Validation et ajustement des justifications
+        # Validation de la réponse :
         validated_response = self.validate_and_adjust_response(full_response)
-        print("DEVIS FINAL RENVOYE : ", validated_response)
+        print("REPONSE RENVOYEE PAR LE LLM : ", full_response)        
+        print("Devis Final généré : ", validated_response)
         return validated_response
 
 
 
+    def get_company_info(self):
+        """ Méthode qui récupère les informations de l'entreprise """
+        context = (
+            "En vue de créer un devis, récupère les éléments suivants relatifs à notre entreprise : "
+            "les économies réalisées grâce à nous, nos avantages compétitifs, l’historique de nos projets, "
+            "nos avantages tarifaires, nos références clients."
+        )
+        self.vector_database = VectorDataBase()
+        data_context = self.vector_database.search_context(context)
+        print("Avantages compétitifs de l'entreprise : ", data_context)
+        return data_context
+
+
+
+    def get_competitor_quotes(self):
+        """ Méthode qui récupère les devis des concurrents """
+        # Récupération des devis :
+        sql_service = SqlDatabase()
+        devis_list = sql_service.get_all_devis()
+        print("Liste des devis : ", devis_list)
+        # Filtrage des devis pour exclure ceux avec un montant total de 0.00 :
+        valid_devis_list = [
+            devis for devis in devis_list 
+            if devis.montant_total > 0.00 and devis.entreprise != "Non spécifié"
+        ]
+        if not valid_devis_list:
+            raise ValueError("Aucun devis valide trouvé.")
+        return valid_devis_list
+
+
+
+    def calculate_reduced_quote(self, valid_devis_list):
+        """ Calcule le devis après réduction """
+        # Détermination du devis le plus bas :
+        lowest_quote = min(devis.montant_total for devis in valid_devis_list)
+        # Conversion de la réduction en décimal :
+        reduction = Decimal(config.RABAIS_APPLIQUE)
+        # Appliquer la réduction :
+        reduced_quote = lowest_quote * reduction
+        print("devis le plus bas : ", lowest_quote, " devis après réduction : ", reduced_quote)
+        return reduced_quote
+
+
+
     def validate_and_adjust_response(self, response):
-        """ Méthode qui valide la réponse pour s'assurer que les réductions de coûts sont justifiées."""
-        # Vérifie si le mot "justification" apparaît dans la réponse
+        """ Méthode qui valide la réponse pour s'assurer que les réductions de coûts sont justifiées """
         if "justification" not in response.lower():
-            response += "\n(Note: Please ensure that all cost reductions are justified with strategic choices such as alternative materials, volume discounts, or other viable strategies.)"
+            response += "\n(Note: Veuillez vous assurer que toutes les réductions de coûts sont justifiées par des choix stratégiques tels que l'utilisation de matériaux alternatifs, des remises sur les volumes ou d'autres stratégies viables.)"
         return response
 

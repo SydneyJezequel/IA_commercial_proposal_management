@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Numeric
+from sqlalchemy import Column, Integer, String, Numeric
 from sqlalchemy.ext.declarative import declarative_base
 
 
@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 
 
-# Déclaration de la BDD in memory
+""" Déclaration de la BDD in memory """
 Base = declarative_base()
 
 
@@ -15,10 +15,16 @@ Base = declarative_base()
 
 
 class Devis(Base):
-    """Classe représentant un devis, mappée à une table SQL"""
+    """ Classe représentant un devis, mappée à une table SQL """
 
+
+
+    """ Nom table """
     __tablename__ = 'devis'
     
+
+
+    """ Attributs """
     id = Column(Integer, primary_key=True, autoincrement=True)
     devis = Column(String(50), default='Non spécifié')
     entreprise = Column(String(255), default='Non spécifié')
@@ -34,7 +40,10 @@ class Devis(Base):
     conditions = Column(String(1000), default='Non spécifié')
     debut_travaux = Column(String(50), default='Non spécifié')
 
+
+
     def __repr__(self):
+        """ Méthode qui affiche tous les attributs d'un devis """
         return (f"Devis(Devis={self.devis}, Entreprise={self.entreprise}, "
                 f"Adresse Entreprise={self.adresse_entreprise}, Date={self.date}, "
                 f"Client={self.client}, Adresse Client={self.adresse_client}, "

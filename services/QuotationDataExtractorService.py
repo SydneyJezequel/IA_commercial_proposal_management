@@ -10,47 +10,34 @@ import config
 
 
 
-class GetQuotationsDataService:
-    """ Service chargé de la récupération des données """
+class QuotationDataExtractorService:
+    """ Service qui récupère les données dans les devis """
 
 
-
-
-
-    """ ***************** Constructeur ***************** """
 
     def __init__(self):
         """ Constructeur """
-        # Emplacements des images :
+        # Emplacements des devis :
         self.image_paths = [os.path.join(config.QUOTATIONS_FILES_PATH, image) for image in config.QUOTATIONS_FILES_LIST]
-        print("Image paths initialized:", self.image_paths)
         # Contenu des devis :
         self.extracted_texts = []
-
-
-
-
-
-
-    """ ***************** Méthodes en charge de l'extraction des données des devis ***************** """
 
 
 
     def preprocess_image(self, image_path):
         """ Méthode qui pré-traite l'image et la sauvegarde dans le répertoire de sortie """
         print("IMAGE_PATH IN PREPROCESS_IMAGE : ", image_path)
-        # Lire l'image en niveaux de gris
+        # Lecture de l'image en niveaux de gris pour simplifier son traitement :
         img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-        # Appliquer l'égalisation d'histogramme
+        # Amélioration du contraste de l'image :
         img = cv2.equalizeHist(img)
-        # Appliquer un filtre bilatéral pour réduire le bruit tout en gardant les contours nets
+        # Réduction du bruit de l'image :
         img = cv2.bilateralFilter(img, d=9, sigmaColor=75, sigmaSpace=75)
-        # Appliquer un seuillage adaptatif pour binariser l'image
-        thresh_img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                           cv2.THRESH_BINARY, 11, 2)
-        # Déterminer le chemin de l'image traitée en changeant le répertoire
+        # Division de l'image en noir et blanc :
+        thresh_img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+        # Définir le chemin de la nouvelle image obtenue :
         processed_image_path = os.path.join(config.PROCESSED_QUOTATIONS_FILES_PATH, os.path.basename(image_path))
-        # Sauvegarder l'image traitée
+        # Sauvegarde de l'image traitée :
         cv2.imwrite(processed_image_path, thresh_img)
         print("processed_image_path : ", processed_image_path)
         return processed_image_path
@@ -67,14 +54,11 @@ class GetQuotationsDataService:
 
 
     def extract_text(self, image_path):
-        """ Méthode qui extrait le texte """
-        print("EXECUTION METHODE extract_text()")
+        """ Méthode qui extrait le texte contenu dans chaque devis """
         try:
-            print("image_path : ", image_path)
             processed_image_path = self.preprocess_image(image_path)
             image = Image.open(processed_image_path)
             extracted_text = pytesseract.image_to_string(image, lang='fra', config='--psm 3 --oem 3')
-            print("extracted_text par pytesseract : ", extracted_text)
             clean_text = self.clean_extracted_text(extracted_text)
             print("clean_extracted_text :", clean_text)
             return clean_text
