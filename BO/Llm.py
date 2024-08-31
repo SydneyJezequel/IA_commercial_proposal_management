@@ -16,9 +16,6 @@ class Llm:
 
     def __init__(self):
         """ Constructeur """
-        self.vector_database = VectorDataBase()
-        # Initialisation de la BDD SQLlite :
-        self.sql_service = DevisDatabaseService()
 
 
 
@@ -53,11 +50,13 @@ class Llm:
 
         # Récupération de nos informations commerciales :
         context = "En vue de créer un devis, récupère les éléments suivants relatifs à notre entreprise : les économies réalisées grâce à nous, nos avantages compétitifs, l’historique de nos projets , nos avantages tarifaire, nos références clients."
+        self.vector_database = VectorDataBase()
         data_context = self.vector_database.search_context(context)
         print("ATOUTS DE NOTRE ENTREPRISE : ", data_context)
 
         # Récupération de la liste des devis concurrents : 
-        devis_list =  self.sql_service.get_all_devis()
+        sql_service = DevisDatabaseService()
+        devis_list =  sql_service.get_all_devis()
         print("LISTE DES DEVIS CONCURRENTS : ", devis_list)
 
         # Filtrage des devis pour exclure ceux avec un montant total de 0.00
@@ -101,7 +100,7 @@ class Llm:
             "    \"Conditions de règlement\": \"\"\n"
             "}}\n"
             f"Détails au suje de notre société : {data_context}\n"
-            f"Liste des devis concurents : {devis_list}\n"
+            f"Liste des devis concurents : {valid_devis_list}\n"
             "assistant\n"
         )
         # Connexion à l'API

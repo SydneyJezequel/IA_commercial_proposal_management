@@ -50,7 +50,7 @@ async def pong():
 async def load_quotations():
     """ Controller qui charge les devis et les informations de l'entreprise dans la BDD vectorielle """
     quotationManagementService = QuotationManagementService()
-    return {quotationManagementService.execute_full_comparison()}
+    return {quotationManagementService.load_quotations()}
 
 
 
@@ -59,13 +59,4 @@ async def generate_commercial_proposal():
     """ Méthode qui génère la proposition commerciale en fonction des devis concurrents et des informations de l'entreprise """
     generateCommercialProposalService = GenerateCommercialProposalService()
     return {"message": generateCommercialProposalService.generate_commercial_proposal()}
-
-
-
-@app.get("/test")
-async def generate_commercial_proposal():
-    """ Controller de test """
-    generateCommercialProposalService = GenerateCommercialProposalService()
-    return {"message": generateCommercialProposalService.test()}
-
 

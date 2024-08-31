@@ -20,16 +20,32 @@ class DevisDatabaseService:
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
 
-    
+        """
+        self.engine = create_engine(db_url)
+        self.Session = sessionmaker(bind=self.engine)
+        self.clear_database()  # Supprime tout le contenu de la BDD à chaque instanciation
+        Base.metadata.create_all(self.engine)
+        """
 
-    def create_devis(self, devis_data):
+    def clear_database(self):
+        """ Méthode qui supprime tout le contenu de la BDD """
+        print(" ********************* SUPPRESSION DE TOUTES LES DONNÉES DE LA BDD ********************* ")
+        # Supprime toutes les tables
+        Base.metadata.drop_all(self.engine)
+        print(" ********************* BASE DE DONNÉES VIDÉE ********************* ")
+
+              
+
+    def save_devis(self, devis_data):
         """ Méthode qui crée un nouveau devis et l'intègre en BDD """
+        print(" ********************* ENREGISTREMENT D'UN DEVIS ********************* ")
         session = self.Session()
         devis_data['montant_total'] = self.clean_and_convert_to_float(devis_data.get('montant_total'))
         devis_data['taux_tva'] = self.clean_and_convert_to_float(devis_data.get('taux_tva'))
         devis_data['total_ttc'] = self.clean_and_convert_to_float(devis_data.get('total_ttc'))
-
+        print("DONNEES DES DEVIS: ", devis_data)
         devis_instance = Devis(**devis_data)
+        print("DEVIS ENREGISTRE (devis_instance): ", devis_instance)
         try:
             session.add(devis_instance)
             session.commit()
@@ -57,7 +73,8 @@ class DevisDatabaseService:
             return None
         finally:
             session.close()
-        
+        print("RESULTAT RENVOYE : ", result)
+        print(" ********************* FIN ENREGISTREMENT ********************* ")
         return result
 
     

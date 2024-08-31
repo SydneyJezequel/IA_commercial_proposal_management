@@ -59,7 +59,7 @@ class GetQuotationsDataService:
     
     def process_quotations(self):
         """ Méthode qui récupère les informations de chaque devis """
-        print("EXECUTION METHODE process_quotations()")
+        print("Chargement des informations de chaque devis dans self.extracted_texts() ")
         for image_path in self.image_paths:
             text = self.extract_text(image_path)
             self.extracted_texts.append(text)

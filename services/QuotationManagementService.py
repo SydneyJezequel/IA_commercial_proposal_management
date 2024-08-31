@@ -1,10 +1,7 @@
 import json
 import math
 import re
-from BO.VectorDatabase import VectorDataBase
-import os
 import config
-from BO.Devis import Devis
 from BO.Llm import Llm
 from services.DevisDatabaseService import DevisDatabaseService
 from services.GetQuotationsDataService import GetQuotationsDataService
@@ -26,30 +23,8 @@ class QuotationManagementService:
         """ Constructeur """
         # Service qui récupère le texte des devis :
         self.get_quotations_data_service = GetQuotationsDataService()
-        # Liste des informations sur les devis :
-        self.devis_data = [] 
-        # Bdd Vectorielle :
-        self.vector_db = VectorDataBase()
         # Initialisation de la BDD SQLlite :
         self.sql_service = DevisDatabaseService()
-
-
-
-
-
-    """ ***************** Méthodes en charge de l'enregistrement des données des devis en BDD ***************** """
-
-    def store_texts_in_vector_db(self, text, devis_number):
-        """ Méthode qui stocke les données des devis sous forme non structurée dans la BDD Vectorielle """
-        print("EXECUTION METHODE : store_texts_in_vector_db")
-        print("TEXT : ", text)
-        embedding = self.vector_db.generate_embedding(text)  # Utilise le modèle de VectorDataBase pour générer l'embedding
-        metadata = {"Devis": f"Devis {devis_number}"}
-        self.vector_db.insert(embedding, metadata=metadata)
-
-
-
-
 
 
 
@@ -79,7 +54,6 @@ class QuotationManagementService:
             "Début des travaux": "",
             "Conditions de règlement": ""
         }}
-        
         Texte :
         {preprocessed_text}
         """
@@ -196,79 +170,29 @@ class QuotationManagementService:
             except ValueError:
                 print("Erreur de conversion lors de la validation des montants.")
         return info
+    
 
 
-
-    def map_data_to_devis(self, data):
-        """ Méthode qui mappe les données extraites à une instance de la classe Devis """
-        print("DEVIS CHARGE DANS LA METHODE map_data_to_devis : ", data)
-        devis_instance = Devis(
-            devis=data.get('Devis', 'Non spécifié'),
-            entreprise=data.get('Entreprise', 'Non spécifié'),
-            adresse_entreprise=data.get('Adresse Entreprise', 'Non spécifié'),
-            date=data.get('Date', 'Non spécifié'),
-            client=data.get('Client', 'Non spécifié'),
-            adresse_client=data.get('Adresse Client', 'Non spécifié'),
-            code_postal_client=data.get('Code Postal Client', 'Non spécifié'),
-            description=data.get('Description', ''),
-            montant_total=data.get('Montant Total', 'Non spécifié'),
-            taux_tva=data.get('Taux TVA', 'Non spécifié'),
-            total_ttc=data.get('Total TTC', 'Non spécifié'),
-            conditions=data.get('Conditions', 'Non spécifié'),
-            debut_travaux=data.get('Début Travaux', 'Non spécifié')
-        )
-        print("VALEUR AFFECTEES AU DEVIS : ")
-        print(f"Devis: {data.get('Devis', 'Non spécifié')}")
-        print(f"Entreprise: {data.get('Entreprise', 'Non spécifié')}")
-        print(f"Adresse Entreprise: {data.get('Adresse Entreprise', 'Non spécifié')}")
-        print(f"Date: {data.get('Date', 'Non spécifié')}")
-        print(f"Client: {data.get('Client', 'Non spécifié')}")
-        print(f"Adresse Client: {data.get('Adresse Client', 'Non spécifié')}")
-        print(f"Code Postal Client: {data.get('Code Postal Client', 'Non spécifié')}")
-        print(f"Description: {data.get('Description', '')}")
-        print(f"Montant Total: {data.get('Montant Total', 'Non spécifié')}")
-        print(f"Taux TVA: {data.get('Taux TVA', 'Non spécifié')}")
-        print(f"Total TTC: {data.get('Total TTC', 'Non spécifié')}")
-        print(f"Conditions: {data.get('Conditions', 'Non spécifié')}")
-        print(f"Début Travaux: {data.get('Début Travaux', 'Non spécifié')}")
-        print("DEVIS INSTANCE GENEREE : ", devis_instance)
-        return devis_instance
-
-
-
-    def extract_value_using_pattern(self, text, pattern):
-        """ Méthode qui extrait des valeurs basées sur un pattern regex """
-        print("EXECUTION METHODE extract_value_using_pattern()")
-        print("TEXT : ", text)
-        print("PATTERN : ", pattern)
-        match = re.search(pattern, text)
-        if match:
-            return match.group(1).strip()
-        return "Non spécifié"
-
-
-
-    def compare_quotations(self):
+    def load_quotations(self):
         """ Méthode pour comparer les devis """
-        print("EXECUTING METHOD compare_quotations()")
+        # Récupération du contenu brut dans les devis :
         self.get_quotations_data_service.process_quotations()
-        print("TEXT RECUPERE DANS LES DEVIS : ", self.get_quotations_data_service.extracted_texts)
-
+        print("ETAPE 1 : CHARGEMENT DES DEVIS BRUTS : ", self.get_quotations_data_service.extracted_texts)
         # Traitement de chaque devis :
+        print("ETAPE 2 : NETTOYAGE DES DEVIS & INTEGRATION EN BDD : ")
         for i, text in enumerate(self.get_quotations_data_service.extracted_texts):
-            # Extraire les informations structurées
+            # ==> *********************************** TEST ***********************************
+            print("TOUR DE BOUCLE : ", i)
+            # ==> *********************************** TEST ***********************************
+            # Extraction des informations structurées :
             info = self.extract_relevant_info(text)
-            print("DEVIS RECUPERE : ", info)
-
-            # Créer et enregistrer une instance de Devis en BDD
-            devis_instance = self.sql_service.create_devis(info)
+            print("DEVIS N° {i} RECUPERE : ", info)
+            # Enregistrement des Devis en BDD :
+            devis_instance = self.sql_service.save_devis(info)
             print("DEVIS INTEGRE EN BDD : ", devis_instance)
-
-            # Ajouter l'instance de Devis à self.devis_data
-            self.devis_data.append(devis_instance)
-            print("RETRIEVING KEY QUOTATION INFORMATION: ", self.devis_data)
-        
-        print("AFFICHAGE DE TOUS LES DEVIS EN BDD SQLITE : ", self.sql_service.get_all_devis())
+            # ==> *********************************** LE PB A LIEU AVANT L'ETAPE 3 ***********************************
+        print("AFFICHAGE DES DEVIS DE LA BDD SQLITE : ", self.sql_service.get_all_devis())
+        print("ETAPE 3 : AFFICHAGE DES DEVIS ET RENVOI DES DEVIS DANS UN FICHIER JSON : ")
         self.display_comparison_table()
 
 
@@ -276,10 +200,11 @@ class QuotationManagementService:
     def display_comparison_table(self):
         """ Retrieve and return the quotations in a comparative list """
         print("EXECUTING METHOD display_comparison_table()")
-        
+
         # Récupérer tous les devis depuis la base de données
         all_devis = self.sql_service.get_all_devis()
 
+        # Création de l'array :
         headers = ["Devis", "Entreprise", "Montant", "Conditions", "Validité"]
         
         # Correspondance entre les headers et les attributs des objets devis
@@ -310,24 +235,158 @@ class QuotationManagementService:
 
 
 
-    def execute_full_comparison(self):
-        """ Méthode encapsulant tout le processus de traitement et de comparaison des devis """
-        print("Début de l'exécution complète")
 
-        # Création des chemins des images
-        images_to_process = config.QUOTATIONS_FILES_LIST
-        images_to_process_paths = [os.path.join(config.QUOTATIONS_FILES_PATH, image) for image in images_to_process]
-        print("Récupération des chemins : OK.")
 
-        # Simulation du texte extrait pour chaque image
-        extracted_texts = [self.get_quotations_data_service.extract_text(image_path) for image_path in images_to_process_paths]
-        print("Extract_texts : ", extracted_texts)
-        print("Extraction du texte dans chaque Image : OK.")
 
-        # Affichage du tableau comparatif et stockage des devis en BDD Vectorielle
-        self.compare_quotations()
-        print("Stockage des données dans la BDD Vectorielle réalisé par cette méthode ==> OK")
-        print("Récupération des infos clés des devis ==> OK.")
 
-        print("********** FIN DES TESTS ************")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    """
+    def extract_value_using_pattern(self, text, pattern):
+        # Méthode qui extrait des valeurs basées sur un pattern regex
+        print("EXECUTION METHODE extract_value_using_pattern()")
+        print("TEXT : ", text)
+        print("PATTERN : ", pattern)
+        match = re.search(pattern, text)
+        if match:
+            return match.group(1).strip()
+        return "Non spécifié"
+    """
+
 
