@@ -2,7 +2,7 @@ from decimal import Decimal
 from openai import OpenAI
 import config
 from BO.VectorDatabase import VectorDataBase
-from services.DevisDatabaseService import DevisDatabaseService
+from BO.SqlDatabase import SqlDatabase
 
 
 
@@ -55,7 +55,7 @@ class Llm:
         print("ATOUTS DE NOTRE ENTREPRISE : ", data_context)
 
         # Récupération de la liste des devis concurrents : 
-        sql_service = DevisDatabaseService()
+        sql_service = SqlDatabase()
         devis_list =  sql_service.get_all_devis()
         print("LISTE DES DEVIS CONCURRENTS : ", devis_list)
 
@@ -78,9 +78,10 @@ class Llm:
         print("DEVIS APRES REDUCTION : ", reduced_quote)
 
         # Préparation du prompt en suivant le format Llama 3
+           # Préparation du prompt en suivant le format Llama 3
         prompt = (
             "system\n"
-            "You are an AI assistant specialized in generating highly competitive commercial proposals based on specific company information and competitor quotes. Ensure the proposal offers a lower total cost, more flexible payment conditions, and the earliest possible start date. Additionally, any cost reductions must be justified with strategic choices, such as the use of alternative materials, volume discounts, etc.\n"
+            "Vous êtes un assistant IA spécialisé dans la génération d'offres commerciales très compétitives basées sur des informations spécifiques à l'entreprise et des devis concurrents. Assurez-vous que l'offre propose un coût total inférieur, des conditions de paiement plus flexibles et la date de début des travaux la plus rapide possible. De plus, toute réduction de coût doit être justifiée par des choix stratégiques, tels que l'utilisation de matériaux alternatifs, des remises sur les volumes, etc.\n"
             "user\n"
             f"Génère un devis qui est 5% moins cher que le devis le plus bas des concurrents. Le montant total doit être égal à {reduced_quote} et justifié par des choix stratégiques tels que l'utilisation de matériaux alternatifs ou des réductions sur les volumes."
             "Les informations du devis doivent être renseignées dans le JSON suivant. Les informations déjà renseignées sont à conserver :\n"
@@ -99,8 +100,8 @@ class Llm:
             "    \"Début des travaux\": \"\",\n"
             "    \"Conditions de règlement\": \"\"\n"
             "}}\n"
-            f"Détails au suje de notre société : {data_context}\n"
-            f"Liste des devis concurents : {valid_devis_list}\n"
+            f"Détails au sujet de notre société : {data_context}\n"
+            f"Liste des devis concurrents : {valid_devis_list}\n"
             "assistant\n"
         )
         # Connexion à l'API

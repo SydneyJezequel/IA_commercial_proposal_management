@@ -9,7 +9,7 @@ import re
 
 
 
-class DevisDatabaseService:
+class SqlDatabase:
     """ Service pour gérer la base de données des devis """
 
 

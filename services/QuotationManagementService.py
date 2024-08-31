@@ -3,7 +3,7 @@ import math
 import re
 import config
 from BO.Llm import Llm
-from services.DevisDatabaseService import DevisDatabaseService
+from BO.SqlDatabase import SqlDatabase
 from services.GetQuotationsDataService import GetQuotationsDataService
 
 
@@ -24,7 +24,7 @@ class QuotationManagementService:
         # Service qui récupère le texte des devis :
         self.get_quotations_data_service = GetQuotationsDataService()
         # Initialisation de la BDD SQLlite :
-        self.sql_service = DevisDatabaseService()
+        self.sql_service = SqlDatabase()
 
 
 
