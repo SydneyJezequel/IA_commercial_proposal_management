@@ -163,28 +163,19 @@ class QuotationProcessingService:
 
     def normalize_and_convert_amount(self, amount_str):
         """ Méthode qui supprime les séparateurs de milliers et remplace les virgules par des points. """
+
         try:
-            # Suppression des séparateurs de milliers (point) avant la conversion
+            # Suppression des espaces (séparateurs de milliers) :
+            amount_str = amount_str.replace(' ', '')
+            # Suppression des séparateurs de milliers (point) avant la conversion :
             amount_str = re.sub(r'\.(?=\d{3})', '', amount_str)
-            # Remplacement des virgules par des points
+            # Remplacement des virgules par des points :
             amount_str = amount_str.replace(',', '.')
-            # Retrait des espaces et conversion du montant en float
-            return float(amount_str.strip())  
+            # Retrait des espaces et conversion du montant en float :
+            return float(amount_str.strip())
+
         except ValueError as ve:
-            logging.error(f"Erreur de conversion lors de la normalisation du montant : '{amount_str}' est invalide. Détails de l'erreur : {ve}")
-            raise ValueError(f"Erreur de conversion lors de la normalisation du montant : '{amount_str}' est invalide.")  # Relève l'exception avec un message plus explicite
-
-
-
-    def safe_convert_to_float(self, amount):
-        """ Méthode sécurisée pour convertir un montant en float. """
-        try:
-            # Nettoyage de la string et exécution de la conversion :
-            return self.normalize_and_convert_amount(amount.replace(' EUR', '').replace(' %', '')) 
-        except ValueError as ve:
-            raise ValueError(f"Impossible de convertir le montant '{amount}' en float. Vérifiez le format.")
-
- 
+            raise ValueError(f"Erreur de conversion lors de la normalisation du montant : '{amount_str}' est invalide.")  # Relève l'exception avec un message plus explicit
 
 
 
@@ -223,11 +214,12 @@ class QuotationProcessingService:
                 # Extraction des informations structurées :
                 info = self.extract_relevant_info(text)
                 # Enregistrement du devis en BDD :
-                devis_instance = self.sql_service.save_devis(info)
-                logging.info(f"devis intégré : {devis_instance}")
-            logging.info(f"Liste des devis en BDD : {self.sql_service.get_all_devis()}")
+                quotation_instance = self.sql_service.save_quotation(info)
+                logging.info(f"devis intégré : {quotation_instance}")
             self.display_comparison_table()
-
+            logging.info(f"Liste des devis en BDD : {self.sql_service.get_all_quotations()}")
+            return self.sql_service.get_all_quotations()
+        
         except Exception as e:
             raise RuntimeError(f"Erreur lors du chargement des devis : {e}")
 
@@ -238,7 +230,7 @@ class QuotationProcessingService:
 
         try:
             # Récupération des devis en BDD :
-            all_devis = self.sql_service.get_all_devis()
+            all_quotations = self.sql_service.get_all_quotations()
             # Création de l'en-tête :
             headers = ["Devis", "Entreprise", "Montant", "Conditions", "Validité"]
             # Correspondance entre les headers et les attributs des objets devis :
@@ -250,35 +242,34 @@ class QuotationProcessingService:
                 "Validité": "date"
             }
             # Chargement de la liste :
-            devis_list = []
-            for devis in all_devis:
-                devis_dict = {
-                    header: getattr(devis, attribute_mapping[header], "Non spécifié")
+            quotations_list = []
+            for quotation in all_quotations:
+                quotation_dict = {
+                    header: getattr(quotation, attribute_mapping[header], "Non spécifié")
                     for header in headers
                 }
-                devis_list.append(devis_dict)
+                quotations_list.append(quotation_dict)
             # Appel de la méthode pour afficher la liste des devis :
-            self.print_devis_list(headers, devis_list)
-            return devis_list
+            self.print_quotations_list(headers, quotations_list)
 
         except Exception as e:
             raise RuntimeError(f"Erreur lors de l'affichage de la table de comparaison : {e}")
 
 
 
-    def print_devis_list(self, headers, devis_list):
+    def print_quotations_list(self, headers, quotations_list):
         """ Méthode pour logger la liste des devis avec les en-têtes. """
 
         try:
-            if not headers or not devis_list:
+            if not headers or not quotations_list:
                 raise ValueError("Les en-têtes ou la liste des devis ne peuvent pas être vides.")
             logging.info(f"{' | '.join(headers)}")
             logging.info("-" * (len(headers) * 20))
-            for devis in devis_list:
-                if not isinstance(devis, dict):
-                    raise TypeError(f"Élément inattendu dans la liste des devis : {devis}. Chaque élément doit être un dictionnaire.")
-                logging.info(f"{' | '.join(map(str, devis.values()))}")
-            logging.info(f"Liste renvoyée : {devis_list}")
+            for quotation in quotations_list:
+                if not isinstance(quotation, dict):
+                    raise TypeError(f"Élément inattendu dans la liste des devis : {quotation}. Chaque élément doit être un dictionnaire.")
+                logging.info(f"{' | '.join(map(str, quotation.values()))}")
+            logging.info(f"Liste renvoyée : {quotations_list}")
 
         except ValueError as ve:
             logging.error(f"Erreur de valeur : {ve}")

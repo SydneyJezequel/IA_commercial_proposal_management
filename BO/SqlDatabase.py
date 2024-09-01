@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from BO.Devis import Devis, Base
+from BO.Quotation import Quotation, Base
 import config
 import re
 import logging
@@ -28,38 +28,38 @@ class SqlDatabase:
 
 
 
-    def save_devis(self, devis_data):
+    def save_quotation(self, quotations_data):
         """ Méthode qui enregistre un nouveau devis en BDD. """
 
         session = self.Session()
 
         try:
             # Nettoyage et conversion des valeurs numériques :
-            devis_data['montant_total'] = self.clean_and_convert_to_float(devis_data.get('montant_total'))
-            devis_data['taux_tva'] = self.clean_and_convert_to_float(devis_data.get('taux_tva'))
-            devis_data['total_ttc'] = self.clean_and_convert_to_float(devis_data.get('total_ttc'))
+            quotations_data['montant_total'] = self.clean_and_convert_to_float(quotations_data.get('montant_total'))
+            quotations_data['taux_tva'] = self.clean_and_convert_to_float(quotations_data.get('taux_tva'))
+            quotations_data['total_ttc'] = self.clean_and_convert_to_float(quotations_data.get('total_ttc'))
             # Création de l'instance de Devis :
-            devis_instance = Devis(**devis_data)
-            logging.info(f"DEVIS ENREGISTRÉ (devis_instance) : {devis_instance}")
+            quotation_instance = Quotation(**quotations_data)
+            logging.info(f"DEVIS ENREGISTRÉ : {quotation_instance}")
             # Ajout du devis en BDD :
-            session.add(devis_instance)
+            session.add(quotation_instance)
             session.commit()
             # Préparation du résultat :
             result = {
-                "id": devis_instance.id,
-                "devis": devis_instance.devis,
-                "entreprise": devis_instance.entreprise,
-                "adresse_entreprise": devis_instance.adresse_entreprise,
-                "date": devis_instance.date,
-                "client": devis_instance.client,
-                "adresse_client": devis_instance.adresse_client,
-                "code_postal_client": devis_instance.code_postal_client,
-                "description": devis_instance.description,
-                "montant_total": float(devis_instance.montant_total),
-                "taux_tva": float(devis_instance.taux_tva),
-                "total_ttc": float(devis_instance.total_ttc),
-                "conditions": devis_instance.conditions,
-                "debut_travaux": devis_instance.debut_travaux,
+                "id": quotation_instance.id,
+                "devis": quotation_instance.devis,
+                "entreprise": quotation_instance.entreprise,
+                "adresse_entreprise": quotation_instance.adresse_entreprise,
+                "date": quotation_instance.date,
+                "client": quotation_instance.client,
+                "adresse_client": quotation_instance.adresse_client,
+                "code_postal_client": quotation_instance.code_postal_client,
+                "description": quotation_instance.description,
+                "montant_total": float(quotation_instance.montant_total),
+                "taux_tva": float(quotation_instance.taux_tva),
+                "total_ttc": float(quotation_instance.total_ttc),
+                "conditions": quotation_instance.conditions,
+                "debut_travaux": quotation_instance.debut_travaux,
             }
             logging.info(f"RÉSULTAT RENVOYÉ : {result}")
             return result
@@ -92,15 +92,15 @@ class SqlDatabase:
 
 
 
-    def get_all_devis(self):
+    def get_all_quotations(self):
         """ Méthode qui récupère tous les devis en BDD. """
 
         session = self.Session()
-        devis_list = []
+        quotations_list = []
 
         try:
             # Récupération des devis en BDD
-            devis_list = session.query(Devis).all()
+            quotations_list = session.query(Quotation).all()
 
         except Exception as e:
             logging.info(f"Erreur lors de la récupération des devis : {e}")
@@ -109,5 +109,5 @@ class SqlDatabase:
         finally:
             session.close()
 
-        return devis_list
+        return quotations_list
 

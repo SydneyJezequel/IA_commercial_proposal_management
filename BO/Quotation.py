@@ -14,13 +14,13 @@ Base = declarative_base()
 
 
 
-class Devis(Base):
+class Quotation(Base):
     """ Classe représentant un devis, mappée à une table SQL """
 
 
 
     """ Nom table """
-    __tablename__ = 'devis'
+    __tablename__ = 'quotation'
     
 
 
@@ -46,7 +46,7 @@ class Devis(Base):
         """ Méthode qui affiche tous les attributs d'un devis. """
 
         try:
-            return (f"Devis(Devis={self.devis}, Entreprise={self.entreprise}, "
+            return (f"Quotation(Devis={self.devis}, Entreprise={self.entreprise}, "
                     f"Adresse Entreprise={self.adresse_entreprise}, Date={self.date}, "
                     f"Client={self.client}, Adresse Client={self.adresse_client}, "
                     f"Code Postal Client={self.code_postal_client}, Description={self.description}, "

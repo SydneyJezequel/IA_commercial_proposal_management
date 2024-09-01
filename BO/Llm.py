@@ -149,7 +149,7 @@ class Llm:
         try:
             # Récupération des devis :
             sql_service = SqlDatabase()
-            devis_list = sql_service.get_all_devis()
+            devis_list = sql_service.get_all_quotations()
             logging.info(f"Liste des devis : {devis_list}")
             # Filtrage des devis pour exclure ceux avec un montant total de 0.00 :
             valid_devis_list = [
