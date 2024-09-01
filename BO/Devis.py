@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 
 
-""" Déclaration de la BDD in memory """
+""" Déclaration de la BDD in memory. """
 Base = declarative_base()
 
 
@@ -43,12 +43,21 @@ class Devis(Base):
 
 
     def __repr__(self):
-        """ Méthode qui affiche tous les attributs d'un devis """
-        return (f"Devis(Devis={self.devis}, Entreprise={self.entreprise}, "
-                f"Adresse Entreprise={self.adresse_entreprise}, Date={self.date}, "
-                f"Client={self.client}, Adresse Client={self.adresse_client}, "
-                f"Code Postal Client={self.code_postal_client}, Description={self.description}, "
-                f"Montant Total={self.montant_total}, Taux TVA={self.taux_tva}, "
-                f"Total TTC={self.total_ttc}, Conditions={self.conditions}, "
-                f"Début Travaux={self.debut_travaux})")
+        """ Méthode qui affiche tous les attributs d'un devis. """
+
+        try:
+            return (f"Devis(Devis={self.devis}, Entreprise={self.entreprise}, "
+                    f"Adresse Entreprise={self.adresse_entreprise}, Date={self.date}, "
+                    f"Client={self.client}, Adresse Client={self.adresse_client}, "
+                    f"Code Postal Client={self.code_postal_client}, Description={self.description}, "
+                    f"Montant Total={self.montant_total}, Taux TVA={self.taux_tva}, "
+                    f"Total TTC={self.total_ttc}, Conditions={self.conditions}, "
+                    f"Début Travaux={self.debut_travaux})")
+        
+        except AttributeError as e:
+            # Gestion spécifique pour les attributs manquants ou incorrects
+            return f"Erreur : Un attribut manquant ou incorrect a été détecté - {str(e)}"
+        except Exception as e:
+            # Gestion générique pour toute autre exception
+            return f"Erreur : Une erreur inattendue s'est produite - {str(e)}"
 

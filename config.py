@@ -8,7 +8,7 @@ PROCESSED_QUOTATIONS_FILES_PATH = "/Users/sjezequel/PycharmProjects/CommercialPr
 
 
 # Données commerciales de notre compagnie :
-COMPANY_COMMERCIAL_DATA = "/Users/sjezequel/PycharmProjects/CommercialProposals/ressources/commercial_context_dataset.jsonl"
+COMPANY_COMMERCIAL_DATA = "/Users/sjezequel/PycharmProjects/CommercialProposals/ressources/commercial_advantages_list.jsonl"
 
 
 

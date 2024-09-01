@@ -2,6 +2,7 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 import config
 import json
+import logging
 
 
 
@@ -24,49 +25,85 @@ class VectorDataBase:
 
 
 
+    """ Configuration des logs. """
+    logging.basicConfig(level=logging.INFO)
+
+
+
     def generate_embedding(self, text):
-        """ Méthode qui transforme les données textes en Vecteur """
-        return self.embedding_model.encode(text).tolist()
+        """ Méthode qui transforme les données textes en Vecteur. """
+        
+        try:
+            embedding = self.embedding_model.encode(text).tolist()
+            return embedding
+        
+        except Exception as e:
+            raise ValueError(f"Erreur lors de la génération de l'embedding : {str(e)}")
 
 
 
     def populate_vectors(self, dataset):
-        """ Méthode qui enregistre les vecteurs en BDD """
-        print("DATASET CHARGE DANS LA BDD VECTORIELLE : ", dataset)
-        for i, item in enumerate(dataset):
-            combined_text = f"{item['instruction']}. {item['context']}"
-            embeddings = self.generate_embedding(combined_text)
-            collection = self.chroma_client.get_or_create_collection(name="my_collection")
-            collection.add(embeddings=[embeddings], documents=[item['context']], ids=[f"id_{i}"])
+        """ Méthode qui enregistre les vecteurs en BDD. """
+        print("DATASET CHARGÉ DANS LA BDD VECTORIELLE : ", dataset)
+
+        try:
+            for i, item in enumerate(dataset):
+                combined_text = f"{item['instruction']}. {item['context']}"
+                try:
+                    embeddings = self.generate_embedding(combined_text)
+                    collection = self.chroma_client.get_or_create_collection(name="my_collection")
+                    collection.add(embeddings=[embeddings], documents=[item['context']], ids=[f"id_{i}"])
+                except Exception as e:
+                    print(f"Erreur lors de l'ajout du vecteur pour l'élément {i} : {e}")
+
+        except Exception as e:
+            raise RuntimeError(f"Erreur lors de la population des vecteurs : {str(e)}")
 
 
 
     def insert(self, embedding, metadata):
-        """ Méthode qui insert un devis en BDD """
-        print("EMBEDDING : ", embedding)
-        document = f"Devis: {metadata['Devis']}"
-        collection = self.chroma_client.get_or_create_collection(name="my_collection")
-        collection.add(embeddings=[embedding], documents=[document], ids=[metadata['Devis']])
+        """ Méthode qui insère un devis en BDD. """
+
+        try:
+            print("EMBEDDING : ", embedding)
+            document = f"Devis: {metadata['Devis']}"
+            collection = self.chroma_client.get_or_create_collection(name="my_collection")
+            collection.add(embeddings=[embedding], documents=[document], ids=[metadata['Devis']])
+
+        except Exception as e:
+            raise RuntimeError(f"Erreur lors de l'insertion dans la base vectorielle : {str(e)}")
 
 
 
     def search_context(self, query):
-        """ Méthode pour rechercher des vecteurs via une query """
-        query_embeddings = self.generate_embedding(query)
-        collection = self.chroma_client.get_or_create_collection(name="my_collection")
-        return collection.query(query_embeddings=query_embeddings)
+        """ Méthode pour rechercher des vecteurs via une query. """
+
+        try:
+            query_embeddings = self.generate_embedding(query)
+            collection = self.chroma_client.get_or_create_collection(name="my_collection")
+            result = collection.query(query_embeddings=query_embeddings)
+            return result
+        
+        except Exception as e:
+            raise RuntimeError(f"Erreur lors de la recherche du contexte : {str(e)}")
 
 
 
     def load_commercial_context_dataset(self, dataset_path):
-        """ Méthode pour charger les devis dans la BDD vectorielle """
+        """ Méthode pour charger les devis dans la BDD vectorielle. """
+
         try:
             # Chargement de chaque ligne du fichier jsonl :
             with open(dataset_path, 'r') as file:
                 dataset = [json.loads(line) for line in file]
             # Chargement du dataset dans la BDD vectorielle :
             self.populate_vectors(dataset)
-            print(f"Dataset chargé et inséré dans la base vectorielle depuis {dataset_path}")
+            logging.info(f"Dataset chargé et inséré dans la base vectorielle depuis {dataset_path}")
+
+        except FileNotFoundError as fnfe:
+            raise FileNotFoundError(f"Fichier non trouvé : {dataset_path}. Erreur : {fnfe}")
+        except json.JSONDecodeError as jde:
+            raise ValueError(f"Erreur lors de la lecture du fichier JSONL : {jde}")
         except Exception as e:
-            print(f"Erreur lors du chargement du dataset : {e}")
+            raise RuntimeError(f"Erreur lors du chargement du dataset : {str(e)}")
 
