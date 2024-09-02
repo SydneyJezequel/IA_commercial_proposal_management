@@ -1,72 +1,83 @@
 OBJECTIF DE CE PROJET :
-Cette fonctionnalité utilise de l'IA pour :
-1- Comparer des offres commercial en fonction d'un besoin.
-2- Rédiger un argumentaire commercial pour positionner l'une des offres par rapport aux autres.
 
-
-
-
-REMARQUES PREALABLES :
-* Ce projet utilise un LLM via une Api. Dans un contexte professionnel, un LLM propre à l'entreprise doit être utilisé pour assurer la confidentialité de vos données.
-* Le dataset utilisé est composé de devis tous basés sur le même format. Dans un contexte professionnel, il faut améliorer les traitements pour gérer d'autres formats de devis avec des résolutions parfois plus faible.
-* En ajustant ce code, il doit pouvoir être utilisable pour différents types d'offres (ex : offre de produits bancaires).
-
-
-
-
-TUTORIEL :
-
-1- Enregistrer les devis des concurrents à l’emplacement suivant :
-CommercialProposals/ressources/quotations_files
-
-2- Renseigner les avantages comparatifs (atouts, référence clients, etc.) de votre entreprise le fichier suivant :
-CommercialProposals/ressources/commercial_advantages_list.jsonl.
-Le format pour renseigner ses informations est le suivant :
-{"instruction": « Question à laquelle répondre, "context": "Le type de question", "response": « Réponse », "category": "closed_qa"}
-
-3- Exécuter la fonctionnalité qui charge le contenu des devis dans la BDD SQL depuis votre navigateur : http://localhost:8011/load-quotations
-Une copie de la liste des informations récupérées dans les devis est renvoyé sous forme de JSON. Elle peut donc être intégrable dans un front. 
-
-4- Exécuter la fonctionnalité qui génère un devis et son offre commerciale sur la base des devis et données de votre entreprise. Les données de l’entreprise sont stockées dans la BDD Vectorielle durant cette étape, avant la génération du devis et de l’offre :
-http://localhost:8011//generate-commercial-proposal
-Le résultat est renvoyé sous forme de JSON. Il peut donc être intégrable dans un front.
-
-N’hésitez pas à suivre les logs d’exécution dans votre IDE.
-
-
-
-
-MODELES UTILISEES :
-* Le modèle utilisé pour récupéré pour récupérer les informations textuelles dans les devis est modèle un OCR (Optical Character Recognition).
-* Le LLM utilisé est LLAMA3 via MONSTER API : 
-https://monsterapi.ai/user/playground?model=meta-llama/Meta-Llama-3-8B-Instruct
+Ce projet comporte deux fonctionnalités principales :
+1- La première consiste à récupérer les informations de plusieurs devis pour générer un tableau comparatif.
+2- La seconde permet de générer un devis et une offre commerciale qui se positionnent par rapport aux devis concurrents.
 
 
 
 
 REMARQUES ET CONSEILS D'UTILISATION :
 
-* Un diagramme d'activité est stocké à côté de ce README pour illustrer l'exécution des 2 fonctionnalités.
+* Ces deux fonctionnalités utilisent des technologies basées sur l'IA (LLM, outils de traitement d'images).
 
-* Ce projet fait appel à un LLM à travers une Api. Dans un contexte professionnel, un LLM propre à l'entreprise doit être utilisé. Cela permet d’assurer la confidentialité de vos données et d’améliorer ses performances par rapport aux cas d’usages. Par exemple, on peut Fine-Tuner ce LLM avec un dataset propre au secteur de l’entreprise pour améliorer les performances. Il faut, néanmoins, avoir en tête que le Fine-Tuning est plus gourmand en ressources que l’utilisation d’une BDD Vectorielle. La mise à jour du modèle sera donc plus coûteuse et complexe via le Fine-Tuning qu’avec l’actualisation d’une BDD Vectorielle.
+* Le fonctionnement de ces 2 méthodes est illustrés dans des diagrammes d'activités aux emplacements suivants :
+CommercialProposals/activity_diagrams_features.
 
-* Il est possible que l’Api qui permet d’accéder au LLM soit coupé. Si c’est le cas, je vous invite à passer par l’Api d’un autre LLM et à modifier le format du prompt utilisé pour communiquer avec lui (fichier : LLM / Méthode : generate_commercial_proposal()).
+* Ce projet fait appel à un LLM via une API. Dans un contexte professionnel, un LLM propre à l'entreprise doit être utilisé. Cela permet d’assurer la confidentialité des données et d’améliorer les performances par rapport à des cas d’usage spécifiques. Par exemple, il serait possible d’affiner ce LLM avec un dataset spécifique au secteur de l’entreprise pour en améliorer les performances. Cette technique est toutefois plus coûteuse en ressources que l’utilisation d’une BDD vectorielle.
 
-* Les devis du dataset utilisent tous le même format. Dans un contexte professionnel, il faut améliorer les traitements pour gérer d'autres formats de devis avec des résolutions parfois plus faibles.
+* Il est possible que l’API qui permet d’accéder au LLM soit indisponible. Si c’est le cas, je vous invite à utiliser l’API d’un autre LLM et à ajuster le format du prompt utilisé pour communiquer avec lui (fichier/classe : LLM).
 
-* Le README contient des informations complémentaires pour manipuler les fonctionnalités de ce projet.
+* Les devis du jeu de données utilisent tous le même format. Dans un contexte professionnel, il est important d'améliorer les traitements pour gérer les devis avec des résolutions parfois plus faibles.
 
-* Les noms des classes et méthodes sont en anglais. Les commentaires en français. La classe Quotation qui représente un devis est nommé en anglais pour être en ligne avec les autres fichiers. Ses variables sont en français pour l’affichage des informations du devis.
+* La qualité des images fournies à un modèle de type OCR doit être élevée pour extraire des données fiables. Il est donc essentiel de disposer d’images de qualité et/ou de mettre en place des traitements préalables pour fournir des données de qualité au LLM.
 
-* Les prompt utilisés sont ceux du modèle d’IA de Méta Llama 3. Je les ai récupéré dans la documentation officiel et ai ajusté les paramètres suivants pour obtenir les résultats souhaités :
--temperature=0.1,  # Réduire pour une réponse plus déterministe
--top_p=0.8,        # Limiter les choix pour une réponse plus prévisible
-Vous pouvez jouer avec ses paramètres pour obtenir des résultats différents.
+* Les noms des classes et des méthodes sont en anglais, tandis que les commentaires sont en français. La classe Quotation, qui représente un devis, est nommée en anglais pour être cohérente avec les autres classes, tandis que ses variables sont en français pour l’affichage des informations du devis.
+
+* Les prompts utilisés sont ceux du modèle IA de Meta Llama 3, que j’ai récupérés dans la documentation officielle. J'ai ensuite ajusté les paramètres suivants pour obtenir les résultats souhaités :
+    temperature=0.1 : Réduit pour obtenir une réponse plus déterministe.
+    top_p=0.8 : Réduit pour limiter les choix et obtenir une réponse plus prévisible.
+
+* Deux Base de données sont utilisées :
+Une BDD SQL a été utilisée pour stocker les devis, permettant de fournir des réponses précises et structurées au LLM.
+Une BDD vectorielle a été utilisée pour enrichir l'offre commerciale avec des informations telles que la tarification et les avantages concurrentiels.
+
+* Il est nécessaire d’être précis quant au rabais souhaité dans le prompt envoyé au LLM. Sinon, le LLM peut générer un devis dont le montant est de 0.
 
 
-* L’utilisation d’une BDD SQL pour stocker les devis est plus adaptée qu’une BDD vectorielle. Une BDD SQL est conçue pour fournir des réponses précises et structurées. C’est adapté à notre besoin quand il s’agit de fournir des informations précises au LLM. Une BDD vectorielle génère des comparaisons ou des réponses enrichies ce qui correspond à notre besoin pour enrichir le devis d’informations sur notre société.
 
-* Il est nécessaire d’être précis quant au rabais souhaité dans le prompt envoyé au LLM. Sinon, il peut générer un devis dont le montant est 0. * La qualité des images fournies à un modèle de type OCR doit être élevée pour récupérer des données fiables. Il faut donc disposer d’images de qualité et/ou mettre en place des traitements en amont du LLM pour lui fournir des données qualitatives.
+
+TUTORIEL :
+
+1- Définissez les paramètres suivants de votre devis dans le fichier CONFIG.py :
+* NUMERO_DEVIS
+* SOCIETE
+* ADRESSE_SOCIETE
+* DATE_DEVIS
+* DEBUT_TRAVAUX
+* RABAIS_APPLIQUE
+
+2- Enregistrer les devis des concurrents à l’emplacement suivant :
+CommercialProposals/ressources/quotations_files
+
+3- Renseigner les avantages comparatifs de l'entreprise qui génère le devis (atouts, tarifications, etc.) dans le fichier suivant :
+CommercialProposals/ressources/commercial_advantages_list.jsonl
+Le format pour renseigner ses informations est le suivant :
+{
+  "instruction": "renseigner la question à laquelle répondre",
+  "context": "renseigner le type de question",
+  "response": "renseigner la réponse",
+  "category": "closed_qa"
+}
+
+4- Depuis votre navigateur, exécutez la fonctionnalité qui charge le contenu des devis et génère le tableau comparatif.
+L'Url pour exécuter cette fonctionnalité : http://localhost:8011/load-quotations
+Une copie des informations extraites des devis est renvoyée sous forme de JSON, , qui peut être intégré dans un frontend.
+
+5- Depuis votre navigateur, exécutez la fonctionnalité qui génère le devis et l'offre commerciale.
+Les données de l’entreprise qui génère le devis sont stockées dans la BDD vectorielle durant cette étape, avant la génération du devis et de l’offre.
+L'Url pour exécuter cette fonctionnalité : http://localhost:8011//generate-commercial-proposal
+Le résultat est renvoyé sous forme de JSON, qui peut être intégré dans un frontend.
+
+N’hésitez pas à suivre les logs d’exécution dans votre IDE.
+
+
+
+
+MODÈLES UTILISÉS :
+* Les bibliothèques utilisées pour traiter les images et extraire leur contenu sont pytesseract et cv2 (OpenCV).
+* Le LLM utilisé pour traiter le contenu des devis est Llama 3. Il est manipulé via Monster API :
+https://monsterapi.ai/user/playground?model=meta-llama/Meta-Llama-3-8B-Instruct
 
 
 
