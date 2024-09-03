@@ -1,3 +1,7 @@
+from datetime import datetime
+
+
+
 # Emplacement des devis à traiter :
 QUOTATIONS_FILES_PATH = "/Users/sjezequel/PycharmProjects/CommercialProposals/ressources/quotations_files/"
 # Liste des fichiers à traier :
@@ -37,7 +41,8 @@ MONSTER_API_KEY = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6ImM2OWRi
 NUMERO_DEVIS = "001"
 SOCIETE = "Plomberie Brestoise du 29"
 ADRESSE_SOCIETE = "123 Rue de Verdun 29200 Brest"
-DATE_DEVIS = "2024-08-29"
+DATE_DEVIS = datetime.today().strftime('%Y-%m-%d')
 DEBUT_TRAVAUX = "2024-09-01"
 RABAIS_APPLIQUE = "0.95"
+DATE_DEBUT_TRAVAUX = "01/01/2025"
 

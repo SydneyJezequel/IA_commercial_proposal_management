@@ -64,16 +64,20 @@ class Llm:
             # Récupération des devis concurrents : 
             valid_devis_list = self.get_competitor_quotes()
             # Détermination du devis le plus bas et application de la réduction :
-            reduced_quote = self.calculate_reduced_quote(valid_devis_list)
+            free_amount = self.calculate_reduced_quote(valid_devis_list)
+            # Calcul du montant TTC :
+            vat_rate = valid_devis_list[0].taux_tva
+            ttc_amount = self.calculate_ttc_amount(free_amount, vat_rate)
             # Préparation du prompt :
             prompt = (
                 "system\n"
                 "Vous êtes un assistant IA spécialisé dans la génération d'offres commerciales très compétitives basées sur des informations spécifiques à l'entreprise et des devis concurrents. "
-                "Assurez-vous que l'offre propose un coût total inférieur, des conditions de paiement plus flexibles et la date de début des travaux la plus rapide possible. "
+                "Assurez-vous que l'offre propose un coût total inférieur, des conditions de paiement plus flexibles. "
                 "De plus, toute réduction de coût doit être justifiée par des choix stratégiques, tels que l'utilisation de matériaux alternatifs, des remises sur les volumes, etc.\n"
                 "user\n"
-                f"Génère un devis qui est 5% moins cher que le devis le plus bas des concurrents. Le montant total doit être égal à {reduced_quote} et justifié par des choix stratégiques tels que l'utilisation de matériaux alternatifs ou des réductions sur les volumes."
-                "Les informations du devis doivent être renseignées dans le JSON suivant. Les informations déjà renseignées sont à conserver :\n"
+                f"Génère un devis qui est 5% moins cher que le devis le plus bas des concurrents. Le montant total HT doit être égal à {free_amount} et justifié par des choix stratégiques tels que l'utilisation de matériaux alternatifs ou des réductions sur les volumes."
+                "Le montant total TTC doit correspondre à {ttc_amount}."
+                "Les informations du devis doivent être renseignées dans le JSON suivant. Les nom, adresse et code postal du client sont les mêmes que sur les devis des concurrents. La date de début de travaux doit être inférieure à celles des devis des concurrents. Les informations déjà renseignées sont à conserver :\n"
                 "{{\n"
                 "    \"Numéro de devis\": \"" + config.NUMERO_DEVIS + "\",\n"
                 "    \"Société\": \"" + config.SOCIETE + "\",\n"
@@ -86,7 +90,7 @@ class Llm:
                 "    \"Montant total HT\": \"\",\n"
                 "    \"Taux de TVA\": \"\",\n"
                 "    \"Montant total TTC\": \"\",\n"
-                "    \"Début des travaux\": \"\",\n"
+                "    \"Début des travaux\": \"" + config.DATE_DEBUT_TRAVAUX + "\",\n"
                 "    \"Conditions de règlement\": \"\"\n"
                 "}}\n"
                 f"Détails au sujet de notre société : {data_context}\n"
@@ -166,7 +170,7 @@ class Llm:
 
 
     def calculate_reduced_quote(self, valid_devis_list):
-        """ Calcule le devis après réduction. """
+        """ Calcule le montant ht du devis après réduction. """
 
         try:
             # Détermination du devis le plus bas :
@@ -178,6 +182,18 @@ class Llm:
             logging.info(f"Devis le plus bas : {lowest_quote} Devis après réduction : {reduced_quote}")
             return reduced_quote
 
+        except Exception as e:
+            raise RuntimeError(f"Erreur lors du calcul du devis réduit : {str(e)}")
+
+
+
+    def calculate_ttc_amount(self, free_amount, vat_rate):
+        """ Méthode qui calcule le montant total ttc du devis sur la base du montant ht """
+
+        try:
+            # Calcul du montant ttc du devis :
+            ttc_amount = free_amount * (1 + vat_rate)
+            return ttc_amount
         except Exception as e:
             raise RuntimeError(f"Erreur lors du calcul du devis réduit : {str(e)}")
 
