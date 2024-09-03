@@ -65,11 +65,14 @@ class SqlDatabase:
             return result
 
         except ValueError as ve:
+            logging.error(f"Conversion des données échouée : {str(ve)}")
             session.rollback()
             return {"error": f"Conversion des données échouée : {str(ve)}"}
+
         except Exception as e:
+            logging.error(f"Une erreur inattendue s'est produite lors de l'enregistrement du devis : {str(e)}")
             session.rollback()
-            return {"error": f"Une erreur s'est produite lors de l'enregistrement du devis : {str(e)}"}
+            return {"error": f"Une erreur inattendue s'est produite lors de l'enregistrement du devis : {str(e)}"}
         
         finally:
             session.close()
@@ -86,9 +89,11 @@ class SqlDatabase:
             return float(value)
 
         except ValueError as ve:
-            raise ValueError(f"Impossible de convertir la valeur en float : {value}")
+            logging.error(f"Impossible de convertir la valeur en float : {value}")
+            raise ValueError(f"Impossible de convertir la valeur en float : {value}") from ve
         except TypeError as te:
-            raise TypeError(f"Type incorrect pour la conversion en float : {type(value).__name__}")
+            logging.error(f"Type incorrect pour la conversion en float : {type(value).__name__}")
+            raise TypeError(f"Type incorrect pour la conversion en float : {type(value).__name__}") from te
 
 
 
@@ -103,8 +108,8 @@ class SqlDatabase:
             quotations_list = session.query(Quotation).all()
 
         except Exception as e:
-            logging.info(f"Erreur lors de la récupération des devis : {e}")
-            return {"error": f"Une erreur s'est produite lors de la récupération des devis : {str(e)}"}
+            logging.info(f"Une erreur inattendue s'est produite lors de la récupération des devis : {e}")
+            return {"error": f"Une erreur inattendue s'est produite lors de la récupération des devis : {str(e)}"}
         
         finally:
             session.close()

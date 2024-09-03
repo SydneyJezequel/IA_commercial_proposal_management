@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Numeric
 from sqlalchemy.ext.declarative import declarative_base
+import logging
 
 
 
@@ -16,6 +17,11 @@ Base = declarative_base()
 
 class Quotation(Base):
     """ Classe représentant un devis, mappée à une table SQL """
+
+
+
+    """ Configuration des logs. """
+    logging.basicConfig(level=logging.INFO)
 
 
 
@@ -55,9 +61,10 @@ class Quotation(Base):
                     f"Début Travaux={self.debut_travaux})")
         
         except AttributeError as e:
-            # Gestion spécifique pour les attributs manquants ou incorrects
+            logging.error(f"Erreur : Un attribut manquant ou incorrect a été détecté - {str(e)}")
             return f"Erreur : Un attribut manquant ou incorrect a été détecté - {str(e)}"
+
         except Exception as e:
-            # Gestion générique pour toute autre exception
+            logging.error(f"Erreur : Une erreur inattendue s'est produite - {str(e)}")
             return f"Erreur : Une erreur inattendue s'est produite - {str(e)}"
 

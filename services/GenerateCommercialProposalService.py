@@ -1,4 +1,5 @@
 from BO.Llm import Llm
+import logging
 
 
 
@@ -16,7 +17,12 @@ class GenerateCommercialProposalService:
         self.llm = Llm()
 
 
-            
+
+    """ Configuration des logs """
+    logging.basicConfig(level=logging.INFO)
+
+
+
     def generate_commercial_proposal(self):
         """ Méthode qui génère la proposition commerciale. """
 
@@ -25,9 +31,12 @@ class GenerateCommercialProposalService:
             return proposal
         
         except ConnectionError as ce:
-            raise RuntimeError("Erreur de connexion. Veuillez réessayer plus tard.")
+            logging.error(f"Erreur de connexion : {str(ce)}")
+            raise RuntimeError("Erreur de connexion. Veuillez réessayer plus tard.") from ce
         except ValueError as ve:
-            raise ValueError("Erreur de valeur. Vérifiez les données d'entrée.")
+            logging.error(f"Erreur de valeur : {str(ve)}")
+            raise ValueError("Erreur de valeur. Vérifiez les données d'entrée.") from ve
         except Exception as e:
-            raise RuntimeError("Une erreur inconnue est survenue lors de la génération de la proposition.")
+            logging.error(f"Une erreur inattendue est survenue : {str(e)}")
+            raise RuntimeError("Une erreur inattendue est survenue lors de la génération de la proposition.") from e
 

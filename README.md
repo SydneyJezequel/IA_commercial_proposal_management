@@ -28,6 +28,8 @@ CommercialProposals/activity_diagrams_features.
     temperature=0.1 : Réduit pour obtenir une réponse plus déterministe.
     top_p=0.8 : Réduit pour limiter les choix et obtenir une réponse plus prévisible.
 
+* Il est important de bien guider le LLM : cet outil n'est pas le plus performant pour effectuer des calculs complexes. Il est donc préférable de réaliser une partie des calculs et des traitements en amont, puis de lui transmettre les données appropriées afin qu'il puisse fournir une réponse de qualité.
+
 * Deux Base de données sont utilisées :
 Une BDD SQL a été utilisée pour stocker les devis, permettant de fournir des réponses précises et structurées au LLM.
 Une BDD vectorielle a été utilisée pour enrichir l'offre commerciale avec des informations telles que la tarification et les avantages concurrentiels.

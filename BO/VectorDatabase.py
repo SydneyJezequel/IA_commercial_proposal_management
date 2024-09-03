@@ -38,7 +38,8 @@ class VectorDataBase:
             return embedding
         
         except Exception as e:
-            raise ValueError(f"Erreur lors de la génération de l'embedding : {str(e)}")
+            logging.error(f"Erreur lors de la génération de l'embedding : {str(e)}")
+            raise ValueError(f"Erreur lors de la génération de l'embedding : {str(e)}") from e
 
 
 
@@ -53,11 +54,13 @@ class VectorDataBase:
                     embeddings = self.generate_embedding(combined_text)
                     collection = self.chroma_client.get_or_create_collection(name="my_collection")
                     collection.add(embeddings=[embeddings], documents=[item['context']], ids=[f"id_{i}"])
-                except Exception as e:
-                    print(f"Erreur lors de l'ajout du vecteur pour l'élément {i} : {e}")
 
+                except Exception as e:
+                    logging.error(f"Erreur lors de l'ajout du vecteur pour l'élément {i} : {str(e)}")
+                    raise RuntimeError(f"Erreur inattendue lors de l'ajout du vecteur pour l'élément {i} : {str(e)}") from e
         except Exception as e:
-            raise RuntimeError(f"Erreur lors de la population des vecteurs : {str(e)}")
+            logging.error(f"Erreur inattendue lors de la population des vecteurs : {str(e)}")
+            raise RuntimeError(f"Erreur inattendue lors de la population des vecteurs : {str(e)}") from e
 
 
 
@@ -71,7 +74,8 @@ class VectorDataBase:
             collection.add(embeddings=[embedding], documents=[document], ids=[metadata['Devis']])
 
         except Exception as e:
-            raise RuntimeError(f"Erreur lors de l'insertion dans la base vectorielle : {str(e)}")
+            logging.error(f"Erreur inattendue lors de l'insertion dans la base vectorielle : {str(e)}")
+            raise RuntimeError(f"Erreur inattendue lors de l'insertion dans la base vectorielle : {str(e)}") from e
 
 
 
@@ -85,7 +89,8 @@ class VectorDataBase:
             return result
         
         except Exception as e:
-            raise RuntimeError(f"Erreur lors de la recherche du contexte : {str(e)}")
+            logging.error(f"Erreur inattendue lors de la recherche du contexte : {str(e)}")
+            raise RuntimeError(f"Erreur inattendue lors de la recherche du contexte : {str(e)}") from e
 
 
 
@@ -101,9 +106,12 @@ class VectorDataBase:
             logging.info(f"Dataset chargé et inséré dans la base vectorielle depuis {dataset_path}")
 
         except FileNotFoundError as fnfe:
-            raise FileNotFoundError(f"Fichier non trouvé : {dataset_path}. Erreur : {fnfe}")
+            logging.error(f"Fichier non trouvé : {dataset_path}. Erreur : {fnfe}")
+            raise FileNotFoundError(f"Fichier non trouvé : {dataset_path}. Erreur : {fnfe}") from fnfe
         except json.JSONDecodeError as jde:
-            raise ValueError(f"Erreur lors de la lecture du fichier JSONL : {jde}")
+            logging.error(f"Erreur lors de la lecture du fichier JSONL : {dataset_path}. Erreur : {jde}")
+            raise ValueError(f"Erreur lors de la lecture du fichier JSONL : {jde}") from jde
         except Exception as e:
-            raise RuntimeError(f"Erreur lors du chargement du dataset : {str(e)}")
+            logging.error(f"Erreur inattendue lors du chargement des devis : {str(e)}")
+            raise RuntimeError(f"Erreur inattendue lors du chargement des devis : {str(e)}") from e
 

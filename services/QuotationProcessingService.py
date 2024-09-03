@@ -70,11 +70,14 @@ class QuotationProcessingService:
             return info
 
         except ValueError as ve:
-            raise ValueError(f"Une erreur de valeur s'est produite : {str(ve)}")
+            logging.error(f"Une erreur de valeur s'est produite : {str(ve)}")
+            raise ValueError(f"Une erreur de valeur s'est produite : {str(ve)}") from ve
         except json.JSONDecodeError as jde:
-            raise RuntimeError(f"Erreur de décodage JSON : {str(jde)}")
+            logging.error(f"Erreur de décodage JSON : {str(jde)}")
+            raise RuntimeError(f"Erreur de décodage JSON : {str(jde)}") from jde
         except Exception as e:
-            raise RuntimeError(f"Erreur lors de l'extraction des informations : {str(e)}")
+            logging.error(f"Une erreur inattendue s'est produite lors de l'extraction des informations : {str(e)}")
+            raise RuntimeError(f"Une erreur inattendue s'est produite lors de l'extraction des informations : {str(e)}") from e
 
 
 
@@ -96,9 +99,11 @@ class QuotationProcessingService:
             return text
 
         except ValueError as ve:
-            raise ValueError(f"Erreur de prétraitement du texte : {str(ve)}")
+            logging.error(f"Erreur de prétraitement du texte : {str(ve)}")
+            raise ValueError(f"Erreur de prétraitement du texte : {str(ve)}") from ve
         except Exception as e:
-            raise RuntimeError(f"Erreur lors du prétraitement du texte : {str(e)}") 
+            logging.error(f"Une erreur inattendue s'est produite lors du prétraitement du texte : {str(e)}")
+            raise RuntimeError(f"Une erreur inattendue s'est produite lors du prétraitement du texte : {str(e)}") from e
 
 
 
@@ -114,8 +119,9 @@ class QuotationProcessingService:
             try:
                 info = json.loads(json_potential)
                 return info
-            except json.JSONDecodeError:
-                raise ValueError("Erreur : La partie extraite ne peut pas être parsée en JSON.")
+            except json.JSONDecodeError as jde:
+                logging.error(f"Erreur lors du parsing du JSON : {str(jde)} - Contenu JSON extrait : {json_potential}")
+                raise ValueError("Erreur : La partie extraite ne peut pas être parsée en JSON.") from jde
         logging.error("Erreur : Impossible de trouver un JSON valide dans la réponse.")
         # Renvoi d'un dictionnaire vide ou d'un message d'erreur structuré :
         return {
@@ -138,28 +144,37 @@ class QuotationProcessingService:
 
     def format_and_validate_llm_response(self, response):
         """ Méthode pour parser et valider la réponse du LLM. """
-        # Parsing de la réponse et normalisation
-        normalized_info = {
-            'devis': response.get('Numéro de devis', 'Non spécifié'),
-            'entreprise': response.get('Société', 'Non spécifié'),
-            'adresse_entreprise': response.get('Adresse de la société', 'Non spécifié'),
-            'date': response.get('Date du devis', 'Non spécifié'),
-            'client': response.get('Nom du client', 'Non spécifié'),
-            'adresse_client': response.get('Adresse du client', 'Non spécifié'),
-            'code_postal_client': response.get('Code Postal du client', 'Non spécifié'),
-            'description': response.get('Description du travail', 'Non spécifié'),
-            'montant_total': float(self.normalize_and_convert_amount(response.get('Montant total HT', '0 EUR').replace(' EUR', ''))),
-            'taux_tva': float(self.normalize_and_convert_amount(response.get('Taux de TVA', '0%').replace('%', ''))),
-            'total_ttc': float(self.normalize_and_convert_amount(response.get('Montant total TTC', '0 EUR').replace(' EUR', ''))),
-            'conditions': response.get('Conditions de règlement', 'Non spécifié'),
-            'debut_travaux': response.get('Début des travaux', 'Non spécifié')
-        }
-        logging.info(f"INFO RECUPEREE : {normalized_info}")
-        # Validation et correction des données extraites
-        normalized_info = self.validate_and_correct_info(normalized_info)
-        return normalized_info
+        try:
+            # Parsing de la réponse et normalisation
+            normalized_info = {
+                'devis': response.get('Numéro de devis', 'Non spécifié'),
+                'entreprise': response.get('Société', 'Non spécifié'),
+                'adresse_entreprise': response.get('Adresse de la société', 'Non spécifié'),
+                'date': response.get('Date du devis', 'Non spécifié'),
+                'client': response.get('Nom du client', 'Non spécifié'),
+                'adresse_client': response.get('Adresse du client', 'Non spécifié'),
+                'code_postal_client': response.get('Code Postal du client', 'Non spécifié'),
+                'description': response.get('Description du travail', 'Non spécifié'),
+                'montant_total': float(self.normalize_and_convert_amount(response.get('Montant total HT', '0 EUR').replace(' EUR', ''))),
+                'taux_tva': float(self.normalize_and_convert_amount(response.get('Taux de TVA', '0%').replace('%', ''))),
+                'total_ttc': float(self.normalize_and_convert_amount(response.get('Montant total TTC', '0 EUR').replace(' EUR', ''))),
+                'conditions': response.get('Conditions de règlement', 'Non spécifié'),
+                'debut_travaux': response.get('Début des travaux', 'Non spécifié')
+            }
+            logging.info(f"INFO RECUPEREE : {normalized_info}")
 
-        
+            # Validation et correction des données extraites
+            normalized_info = self.validate_and_correct_info(normalized_info)
+            return normalized_info
+
+        except ValueError as ve:
+            logging.error(f"Erreur de conversion lors de la normalisation ou validation : {str(ve)}")
+            raise ValueError(f"Erreur de conversion lors de la normalisation ou validation : {str(ve)}") from ve
+        except Exception as e:
+            logging.error(f"Erreur inattendue lors du traitement de la réponse du LLM : {str(e)}")
+            raise RuntimeError(f"Erreur inattendue lors du traitement de la réponse du LLM : {str(e)}") from e
+
+            
 
     def normalize_and_convert_amount(self, amount_str):
         """ Méthode qui supprime les séparateurs de milliers et remplace les virgules par des points. """
@@ -175,7 +190,8 @@ class QuotationProcessingService:
             return float(amount_str.strip())
 
         except ValueError as ve:
-            raise ValueError(f"Erreur de conversion lors de la normalisation du montant : '{amount_str}' est invalide.")  # Relève l'exception avec un message plus explicit
+            logging.error(f"Erreur inattendue de conversion lors de la normalisation du montant : '{amount_str}' est invalide. Détails de l'erreur : {str(ve)}")
+            raise ValueError(f"Erreur inattendue de conversion  lors de la normalisation du montant : '{amount_str}' est invalide.") from ve
 
 
 
@@ -195,8 +211,12 @@ class QuotationProcessingService:
                     info['total_ttc'] = f"{total_ttc_calculated:.2f} EUR"
 
             except ValueError as ve:
-                raise ValueError("Erreur de conversion lors de la validation des montants.")
-            
+                logging.error(f"Erreur de conversion lors de la validation des montants : {str(ve)}")
+                raise ValueError("Erreur de conversion lors de la validation des montants.") from ve
+            except Exception as e:
+                logging.error(f"Erreur inattendue lors de la validation des informations : {str(e)}")
+                raise RuntimeError(f"Erreur inattendue lors de la validation des informations : {str(e)}") from e
+
         return info
     
 
@@ -221,7 +241,8 @@ class QuotationProcessingService:
             return self.sql_service.get_all_quotations()
         
         except Exception as e:
-            raise RuntimeError(f"Erreur lors du chargement des devis : {e}")
+            logging.error(f"Erreur inattendue lors du chargement des devis : {str(e)}")
+            raise RuntimeError(f"Erreur inattendue lors du chargement des devis : {e}") from e
 
 
 
@@ -253,7 +274,8 @@ class QuotationProcessingService:
             self.print_quotations_list(headers, quotations_list)
 
         except Exception as e:
-            raise RuntimeError(f"Erreur lors de l'affichage de la table de comparaison : {e}")
+            logging.error(f"Erreur inattendue lors de l'affichage de la table de comparaison : {str(e)}")
+            raise RuntimeError(f"Erreur inattendue lors de l'affichage de la table de comparaison : {str(e)}") from e
 
 
 
@@ -273,8 +295,12 @@ class QuotationProcessingService:
 
         except ValueError as ve:
             logging.error(f"Erreur de valeur : {ve}")
+            raise ValueError(f"Erreur de valeur : {str(ve)}") from ve
         except TypeError as te:
             logging.error(f"Erreur de type : {te}")
+            raise TypeError(f"Erreur de type : {str(te)}") from te
         except Exception as e:
-            logging.error(f"Une erreur est survenue lors de l'impression de la liste des devis : {e}")
+            logging.error(f"Une erreur inattendue est survenue lors de l'impression de la liste des devis : {e}")
+            raise RuntimeError(f"Une erreur inattendue est survenue lors de l'impression de la liste des devis : {str(e)}") from e
+
 

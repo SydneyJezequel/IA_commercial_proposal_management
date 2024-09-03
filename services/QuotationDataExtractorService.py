@@ -53,8 +53,8 @@ class QuotationDataExtractorService:
             return processed_image_path
         
         except Exception as e:
-            logging.error(f"Erreur lors du traitement de l'image {image_path}: {str(e)}")
-            return None  # Retourne None en cas d'erreur
+            logging.error(f"Une erreur inattendue s'est produite lors du traitement de l'image {image_path}: {str(e)}")
+            return None
 
 
     
@@ -68,7 +68,8 @@ class QuotationDataExtractorService:
                 self.extracted_texts.append(text)
 
             except Exception as e:
-                logging.error(f"Erreur lors de l'extraction de texte pour l'image {image_path}: {str(e)}")
+                logging.error(f"Une erreur inattendue s'est produite lors de l'extraction de texte pour l'image {image_path}: {str(e)}")
+                raise RuntimeError(f"Une erreur inattendue s'est produite lors de l'extraction de texte pour l'image {image_path}.") from e
 
 
 
@@ -84,10 +85,11 @@ class QuotationDataExtractorService:
             return clean_text
         
         except pytesseract.TesseractError as e:
-            raise RuntimeError(f"Erreur Tesseract : {str(e)}")
+            logging.error(f"Erreur Tesseract : {str(e)}")
+            raise RuntimeError(f"Erreur Tesseract : {str(e)}") from e
         except Exception as e:
-            raise RuntimeError(f"Erreur lors du traitement de l'image {image_path} : {str(e)}")
-        return ""
+            logging.error(f"Une erreur inattendue s'est produite lors du traitement de l'image {image_path} : {str(e)}")
+            raise RuntimeError(f"Une erreur inattendue s'est produite lors du traitement de l'image {image_path} : {str(e)}") from e
 
 
 
@@ -103,7 +105,6 @@ class QuotationDataExtractorService:
             return ' '.join(cleaned_text)
         
         except Exception as e:
-            logging.error(f"Erreur lors de la correction du texte : {str(e)}")
-            # Renvoie du texte d'origine en cas d'erreur :
+            logging.error(f"Une erreur inattendue s'est produite lors de la correction du texte : {str(e)}")
             return text
 

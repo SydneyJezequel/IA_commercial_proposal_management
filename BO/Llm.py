@@ -25,36 +25,6 @@ class Llm:
 
 
 
-    def generate_answer(self, prompt):
-        """ Méthode qui interroge le LLM. """
-
-        try:
-            # Config de l'Api :
-            client = OpenAI(
-                base_url=config.MONSTER_API_URL,
-                api_key=config.MONSTER_API_KEY
-            )
-            # Exécution de la requête :
-            completion = client.chat.completions.create(
-                model="meta-llama/Meta-Llama-3-8B-Instruct",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-                top_p=0.8,
-                max_tokens=500,
-                stream=True
-            )
-            # Traitement de la réponse :
-            full_response = ""
-            for chunk in completion:
-                if chunk.choices[0].delta.content is not None:
-                    full_response += chunk.choices[0].delta.content
-            return full_response
-
-        except Exception as e:
-            return {"error": f"Erreur lors de l'interrogation du LLM : {str(e)}"}
-
-
-
     def generate_commercial_proposal(self):
         """ Méthode qui génère une offre commerciale via le LLM. """
 
@@ -66,17 +36,18 @@ class Llm:
             # Détermination du devis le plus bas et application de la réduction :
             free_amount = self.calculate_reduced_quote(valid_devis_list)
             # Calcul du montant TTC :
-            vat_rate = valid_devis_list[0].taux_tva
+            vat_rate = valid_devis_list[0].taux_tva / 100
             ttc_amount = self.calculate_ttc_amount(free_amount, vat_rate)
+            logging.info(f"Montant ht : {free_amount}, tva : {vat_rate}, Montant ttc : {ttc_amount}")
             # Préparation du prompt :
             prompt = (
                 "system\n"
                 "Vous êtes un assistant IA spécialisé dans la génération d'offres commerciales très compétitives basées sur des informations spécifiques à l'entreprise et des devis concurrents. "
                 "Assurez-vous que l'offre propose un coût total inférieur, des conditions de paiement plus flexibles. "
-                "De plus, toute réduction de coût doit être justifiée par des choix stratégiques, tels que l'utilisation de matériaux alternatifs, des remises sur les volumes, etc.\n"
+                "De plus, toute réduction de coût doit être justifiée par des choix stratégiques, tels que l'utilisation de matériaux alternatifs, des remises sur les volumes, des partenariats de long terme avec des fournisseurs pour obtenir des tarifs préférentiels, etc.\n"
                 "user\n"
-                f"Génère un devis qui est 5% moins cher que le devis le plus bas des concurrents. Le montant total HT doit être égal à {free_amount} et justifié par des choix stratégiques tels que l'utilisation de matériaux alternatifs ou des réductions sur les volumes."
-                "Le montant total TTC doit correspondre à {ttc_amount}."
+                f"Génère un devis qui est 5% moins cher que le devis le plus bas des concurrents. Le montant total HT doit être égal à {free_amount} et justifié par des choix stratégiques tels que l'utilisation de matériaux alternatifs ou des réductions sur les volumes. "
+                f"Le montant total TTC doit correspondre à {ttc_amount}. "
                 "Les informations du devis doivent être renseignées dans le JSON suivant. Les nom, adresse et code postal du client sont les mêmes que sur les devis des concurrents. La date de début de travaux doit être inférieure à celles des devis des concurrents. Les informations déjà renseignées sont à conserver :\n"
                 "{{\n"
                 "    \"Numéro de devis\": \"" + config.NUMERO_DEVIS + "\",\n"
@@ -97,24 +68,8 @@ class Llm:
                 f"Liste des devis concurrents : {valid_devis_list}\n"
                 "assistant\n"
             )
-            # Exécution de la requête :
-            client = OpenAI(
-                base_url=config.MONSTER_API_URL,
-                api_key=config.MONSTER_API_KEY
-            )
-            completion = client.chat.completions.create(
-                model=config.MODEL_NAME,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,  # Réduire pour une réponse plus déterministe
-                top_p=0.8,        # Limiter les choix pour une réponse plus prévisible
-                max_tokens=500,
-                stream=True
-            )
-            # Traitement de la réponse :
-            full_response = ""
-            for chunk in completion:
-                if chunk.choices[0].delta.content:
-                    full_response += chunk.choices[0].delta.content
+            # Appel de la méthode generate_answer pour interroger le LLM :
+            full_response = self.generate_answer(prompt)
             # Validation de la réponse :
             validated_response = self.validate_and_adjust_response(full_response)
             logging.info(f"REPONSE RENVOYEE PAR LE LLM : {full_response}")        
@@ -122,9 +77,42 @@ class Llm:
             return validated_response
 
         except ValueError as ve:
+            logging.error(f"Erreur de validation des données : {str(ve)}")
             return {"error": f"Erreur de validation des données : {str(ve)}"}
         except Exception as e:
-            return {"error": f"Erreur lors de la génération de la proposition commerciale : {str(e)}"}
+            logging.error(f"Une erreur inattendue s'est produite lors de la génération de la proposition commerciale : {str(e)}")
+            return {"error": f"Une erreur inattendue s'est produite lors de la génération de la proposition commerciale : {str(e)}"}
+
+
+
+    def generate_answer(self, prompt):
+        """ Méthode qui interroge le LLM. """
+
+        try:
+            # Config de l'Api :
+            client = OpenAI(
+                base_url=config.MONSTER_API_URL,
+                api_key=config.MONSTER_API_KEY
+            )
+            # Exécution de la requête :
+            completion = client.chat.completions.create(
+                model=config.MODEL_NAME,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+                top_p=0.8,
+                max_tokens=500,
+                stream=True
+            )
+            # Traitement de la réponse :
+            full_response = ""
+            for chunk in completion:
+                if chunk.choices[0].delta.content is not None:
+                    full_response += chunk.choices[0].delta.content
+            return full_response
+
+        except Exception as e:
+            logging.error(f"Une erreur inattendue s'est produite lors de l'interrogation du LLM : {str(e)}")
+            return {"error": f"Une erreur inattendue s'est produite lors de l'interrogation du LLM : {str(e)}"}
 
 
 
@@ -143,7 +131,8 @@ class Llm:
             return data_context
 
         except Exception as e:
-            raise RuntimeError(f"Erreur lors de la récupération des informations de l'entreprise : {str(e)}")
+            logging.error(f"Une erreur inattendue s'est produite lors de la récupération des informations de l'entreprise : {str(e)}")
+            raise RuntimeError(f"Une erreur inattendue s'est produite lors de la récupération des informations de l'entreprise : {str(e)}") from e
 
 
 
@@ -165,7 +154,8 @@ class Llm:
             return valid_devis_list
 
         except Exception as e:
-            raise RuntimeError(f"Erreur lors de la récupération des devis concurrents : {str(e)}")
+            logging.error(f"Une erreur inattendue s'est produite lors de la récupération des devis concurrents : {str(e)}")
+            raise RuntimeError(f"Une erreur inattendue s'est produite lors de la récupération des devis concurrents : {str(e)}") from e
 
 
 
@@ -183,7 +173,8 @@ class Llm:
             return reduced_quote
 
         except Exception as e:
-            raise RuntimeError(f"Erreur lors du calcul du devis réduit : {str(e)}")
+            logging.error(f"Une erreur inattendue s'est produite lors du calcul du devis réduit : {str(e)}")
+            raise RuntimeError(f"Une erreur inattendue s'est produite lors du calcul du devis réduit : {str(e)}") from e
 
 
 
@@ -194,13 +185,15 @@ class Llm:
             # Calcul du montant ttc du devis :
             ttc_amount = free_amount * (1 + vat_rate)
             return ttc_amount
+        
         except Exception as e:
-            raise RuntimeError(f"Erreur lors du calcul du devis réduit : {str(e)}")
+            logging.error(f"Une erreur inattendue s'est produite lors du calcul du montant ttc : {str(e)}")
+            raise RuntimeError(f"Une erreur inattendue s'est produite lors du calcul du montant ttc : {str(e)}") from e
 
 
 
     def validate_and_adjust_response(self, response):
-        "" "Méthode qui valide la réponse pour s'assurer que les réductions de coûts sont justifiées. """
+        """ Méthode qui valide la réponse pour s'assurer que les réductions de coûts sont justifiées. """
 
         try:
             if "justification" not in response.lower():
@@ -208,5 +201,6 @@ class Llm:
             return response
 
         except Exception as e:
-            raise RuntimeError(f"Erreur lors de la validation de la réponse : {str(e)}")
+            logging.error(f"Une erreur inattendue s'est produite lors de la validation de la réponse : {str(e)}")
+            raise RuntimeError(f"Une erreur inattendue s'est produite lors de la validation de la réponse : {str(e)}") from e
 
