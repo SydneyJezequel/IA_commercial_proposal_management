@@ -62,11 +62,14 @@ Le format pour renseigner ses informations est le suivant :
   "category": "closed_qa"
 }
 
-4- Depuis votre navigateur, exécutez la fonctionnalité qui charge le contenu des devis et génère le tableau comparatif.
+4- Lancer le projet depuis le fichier "commercial_proposal_controller.py" avec la commande suivante :
+uvicorn commercial_proposal_controller:app --reload --workers 1 --host 0.0.0.0 --port 8011
+
+5- Depuis votre navigateur, exécutez la fonctionnalité qui charge le contenu des devis et génère le tableau comparatif.
 L'Url pour exécuter cette fonctionnalité : http://localhost:8011/load-quotations
 Une copie des informations extraites des devis est renvoyée sous forme de JSON, , qui peut être intégré dans un frontend.
 
-5- Depuis votre navigateur, exécutez la fonctionnalité qui génère le devis et l'offre commerciale.
+6- Depuis votre navigateur, exécutez la fonctionnalité qui génère le devis et l'offre commerciale.
 Les données de l’entreprise qui génère le devis sont stockées dans la BDD vectorielle durant cette étape, avant la génération du devis et de l’offre.
 L'Url pour exécuter cette fonctionnalité : http://localhost:8011//generate-commercial-proposal
 Le résultat est renvoyé sous forme de JSON, qui peut être intégré dans un frontend.
