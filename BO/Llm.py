@@ -51,7 +51,7 @@ class Llm:
                 "Concernant l’argumentaire commercial :\n"
                 f"Les réductions de coût doivent être justifiées via nos avantages compétitifs : {competitive_advantages}. "
                 f"L’attrait de notre offre doit être justifié à travers les économies réalisées : {savings_realized}. "
-                "Les justifications doivent se concentrer sur les avantages compétitifs et les économies réalisées, sans entrer dans les détails des calculs. "
+                "Les justifications doivent mettre en avant nos avantages compétitifs et les économies réalisées, sans entrer dans les calculs ni mentionner de chiffres précis."
                 "Voici des exemples d'arguments à utiliser : "
                 "'Nous utilisons des matériaux alternatifs de qualité équivalente qui réduisent les coûts,' "
                 "'Nous bénéficions de tarifs compétitifs grâce à des partenariats de long terme avec nos fournisseurs,' "
@@ -84,8 +84,7 @@ class Llm:
             full_response = self.generate_answer(prompt)
             # Validation de la réponse :
             validated_response = self.validate_and_adjust_response(full_response)
-            logging.info(f"REPONSE RENVOYEE PAR LE LLM : {full_response}")        
-            logging.info(f"Devis Final généré : {validated_response}")
+            logging.info(f"Devis et offre générés : {validated_response}")
             return validated_response
 
         except ValueError as ve:

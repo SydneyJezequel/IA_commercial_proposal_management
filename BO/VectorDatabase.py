@@ -64,36 +64,6 @@ class VectorDataBase:
 
 
 
-    def insert(self, embedding, metadata):
-        """ Méthode qui insère un devis en BDD. """
-
-        try:
-            print("EMBEDDING : ", embedding)
-            document = f"Devis: {metadata['Devis']}"
-            collection = self.chroma_client.get_or_create_collection(name="my_collection")
-            collection.add(embeddings=[embedding], documents=[document], ids=[metadata['Devis']])
-
-        except Exception as e:
-            logging.error(f"Erreur inattendue lors de l'insertion dans la base vectorielle : {str(e)}")
-            raise RuntimeError(f"Erreur inattendue lors de l'insertion dans la base vectorielle : {str(e)}") from e
-
-
-
-    def search_context(self, query):
-        """ Méthode pour rechercher des vecteurs via une query. """
-
-        try:
-            query_embeddings = self.generate_embedding(query)
-            collection = self.chroma_client.get_or_create_collection(name="my_collection")
-            result = collection.query(query_embeddings=query_embeddings)
-            return result
-        
-        except Exception as e:
-            logging.error(f"Erreur inattendue lors de la recherche du contexte : {str(e)}")
-            raise RuntimeError(f"Erreur inattendue lors de la recherche du contexte : {str(e)}") from e
-
-
-
     def retrieve_all_data(self):
         """ Méthode pour récupérer toutes les données de la collection vectorielle. """
         try:
