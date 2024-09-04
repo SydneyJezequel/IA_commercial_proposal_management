@@ -30,7 +30,10 @@ class Llm:
 
         try:
             # Récupération de nos informations commerciales :
-            data_context = self.get_company_info()
+            data_context = self.get_company_infos()
+            # Construction des avantages compétitifs et des économies réalisées par l'entreprise qui génère le devis :
+            competitive_advantages = self.build_competitive_advantages(data_context)
+            savings_realized = self.build_savings_realized(data_context)
             # Récupération des devis concurrents : 
             valid_devis_list = self.get_competitor_quotes()
             # Détermination du devis le plus bas et application de la réduction :
@@ -43,12 +46,22 @@ class Llm:
             prompt = (
                 "system\n"
                 "Vous êtes un assistant IA spécialisé dans la génération d'offres commerciales très compétitives basées sur des informations spécifiques à l'entreprise et des devis concurrents. "
-                "Assurez-vous que l'offre propose un coût total inférieur, des conditions de paiement plus flexibles. "
-                "De plus, toute réduction de coût doit être justifiée par des choix stratégiques, tels que l'utilisation de matériaux alternatifs, des remises sur les volumes, des partenariats de long terme avec des fournisseurs pour obtenir des tarifs préférentiels, etc.\n"
-                "user\n"
+                "Je souhaite obtenir un devis et un argumentaire commercial accompagnant ce devis.\n"
+                "\n"
+                "Concernant l’argumentaire commercial :\n"
+                f"Les réductions de coût doivent être justifiées via nos avantages compétitifs : {competitive_advantages}. "
+                f"L’attrait de notre offre doit être justifié à travers les économies réalisées : {savings_realized}. "
+                "Les justifications doivent se concentrer sur les avantages compétitifs et les économies réalisées, sans entrer dans les détails des calculs. "
+                "Voici des exemples d'arguments à utiliser : "
+                "'Nous utilisons des matériaux alternatifs de qualité équivalente qui réduisent les coûts,' "
+                "'Nous bénéficions de tarifs compétitifs grâce à des partenariats de long terme avec nos fournisseurs,' "
+                "'Nos installations permettent aux clients d'économiser sur leurs factures annuelles.'\n"
+                "\n"
+                "Concernant le devis :\n"
                 f"Génère un devis qui est 5% moins cher que le devis le plus bas des concurrents. Le montant total HT doit être égal à {free_amount} et justifié par des choix stratégiques tels que l'utilisation de matériaux alternatifs ou des réductions sur les volumes. "
                 f"Le montant total TTC doit correspondre à {ttc_amount}. "
-                "Les informations du devis doivent être renseignées dans le JSON suivant. Les nom, adresse et code postal du client sont les mêmes que sur les devis des concurrents. La date de début de travaux doit être inférieure à celles des devis des concurrents. Les informations déjà renseignées sont à conserver :\n"
+                "Les informations du devis doivent être renseignées dans le JSON suivant. Les nom, adresse et code postal du client sont les mêmes que sur les devis des concurrents. "
+                "La date de début de travaux doit être inférieure à celles des devis des concurrents. Les informations déjà renseignées sont à conserver :\n"
                 "{{\n"
                 "    \"Numéro de devis\": \"" + config.NUMERO_DEVIS + "\",\n"
                 "    \"Société\": \"" + config.SOCIETE + "\",\n"
@@ -64,7 +77,6 @@ class Llm:
                 "    \"Début des travaux\": \"" + config.DATE_DEBUT_TRAVAUX + "\",\n"
                 "    \"Conditions de règlement\": \"\"\n"
                 "}}\n"
-                f"Détails au sujet de notre société : {data_context}\n"
                 f"Liste des devis concurrents : {valid_devis_list}\n"
                 "assistant\n"
             )
@@ -82,6 +94,28 @@ class Llm:
         except Exception as e:
             logging.error(f"Une erreur inattendue s'est produite lors de la génération de la proposition commerciale : {str(e)}")
             return {"error": f"Une erreur inattendue s'est produite lors de la génération de la proposition commerciale : {str(e)}"}
+
+
+
+    def build_competitive_advantages(self, data_context):
+        """ Méthode qui construit une liste d'avantages compétitifs à partir du contexte de données. """
+        # Parcourt les documents et les métadonnées pour extraire les avantages compétitifs
+        advantages = [
+            doc for doc, meta in zip(data_context['documents'], data_context['metadatas']) 
+            if doc == 'Avantages compétitifs'
+        ]
+        return "\n".join(advantages)
+
+
+
+    def build_savings_realized(self, data_context):
+        """ Méthode qui construit une liste des économies réalisées à partir du contexte de données. """
+        # Parcourt les documents et les métadonnées pour extraire les économies réalisées
+        savings = [
+            doc for doc, meta in zip(data_context['documents'], data_context['metadatas']) 
+            if doc == 'économies réalisées'
+        ]
+        return "\n".join(savings)
 
 
 
@@ -116,17 +150,12 @@ class Llm:
 
 
 
-    def get_company_info(self):
+    def get_company_infos(self):
         """ Méthode qui récupère les informations de l'entreprise. """
 
         try:
-            context = (
-                "En vue de créer un devis, récupère les éléments suivants relatifs à notre entreprise : "
-                "les économies réalisées grâce à nous, nos avantages compétitifs, l’historique de nos projets, "
-                "nos avantages tarifaires, nos références clients."
-            )
             self.vector_database = VectorDataBase()
-            data_context = self.vector_database.search_context(context)
+            data_context = self.vector_database.retrieve_all_data()
             logging.info(f"Avantages compétitifs de l'entreprise : {data_context}")
             return data_context
 

@@ -94,6 +94,24 @@ class VectorDataBase:
 
 
 
+    def retrieve_all_data(self):
+        """ Méthode pour récupérer toutes les données de la collection vectorielle. """
+        try:
+            # Accès à la collection
+            collection = self.chroma_client.get_or_create_collection(name="my_collection")
+
+            # Récupération de toutes les données dans la collection (assurez-vous que get() est supporté)
+            result = collection.get()
+
+            logging.info(f"Nombre total d'entrées récupérées : {len(result['ids'])}")
+            return result
+        
+        except Exception as e:
+            logging.error(f"Erreur inattendue lors de la récupération des données : {str(e)}")
+            raise RuntimeError(f"Erreur inattendue lors de la récupération des données : {str(e)}") from e
+
+
+
     def load_commercial_context_dataset(self, dataset_path):
         """ Méthode pour charger les devis dans la BDD vectorielle. """
 
